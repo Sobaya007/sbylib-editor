@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/sbylib-editor-example
+sbylib-editor-example.so
+sbylib-editor-example.dylib
+sbylib-editor-example.dll
+sbylib-editor-example.a
+sbylib-editor-example.lib
+sbylib-editor-example-test-*
+*.exe
+*.o
+*.obj
+*.lst

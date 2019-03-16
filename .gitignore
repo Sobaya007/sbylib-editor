@@ -1,0 +1,6 @@
+.dub
+dub.selections.json
+lib
+example/bin
+example/.sbylib
+**/*.log
