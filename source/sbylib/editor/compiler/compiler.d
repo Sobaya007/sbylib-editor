@@ -7,16 +7,6 @@ static:
 
     private uint seed;
 
-    DLL compileFromSource(string source, string[] importPath = []) {
-        import std.file : write;
-        import std.path : buildPath;
-        import sbylib.editor.util : sbyDir;
-
-        auto fileName = sbyDir.buildPath("test.d");
-        write(fileName, source);
-        return compile(fileName, importPath);
-    }
-
     DLL compile(string fileName, string[] importPath = []) {
         import std.format : format;
         import std.path : buildPath;
@@ -31,10 +21,12 @@ static:
         import std.array : array;
         import std.process : execute;
         import std.format : format;
+        import sbylib.editor.util : versions;
 
         const dmd = execute(["dmd", inputFileName,
                 format!"-of=%s"(outputFileName), "-shared"]
-                ~ importPathList.map!(p => p.format!"-I%s").array);
+                ~ importPathList.map!(p => p.format!"-I%s").array
+                ~ versions);
 
         if (dmd.status != 0) throw new Exception(format!"Compilation failed\n%s"(dmd.output));
     }

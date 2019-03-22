@@ -1,12 +1,26 @@
 module sbylib.editor.util;
 
 string[] importPath() {
+    import std.algorithm : filter, map, sort, uniq;
+    import std.array : array;
+    import std.path : dirName;
+    import std.process : executeShell;
+    import std.string : split;
+    import sbylib.editor.project.metainfo : MetaInfo;
+
+    auto result = executeShell("dub describe --import-paths").output.split("\n").filter!(s => s.length > 0).array;
+    result ~= MetaInfo().projectFileList.map!(file => file.dirName).array.sort.uniq.array;
+
+    return result;
+}
+
+string[] versions() {
     import std.algorithm : filter;
     import std.array : array;
     import std.process : executeShell;
     import std.string : split;
 
-    return executeShell("dub describe --import-paths").output.split("\n").filter!(s => s.length > 0).array;
+    return executeShell("dub describe --data=versions").output.split.filter!(s => s.length > 0).array;
 }
 
 string fontPath(string filename) {

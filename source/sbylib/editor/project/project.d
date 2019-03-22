@@ -8,7 +8,7 @@ class Project {
 
     private alias VModule = Module!(void);
 
-    private VModule[string] moduleList;
+    VModule[string] moduleList;
 
     void delegate(Exception) loadErrorHandler;
 

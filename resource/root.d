@@ -175,3 +175,4 @@ class Floor : Entity {
 }
 
 mixin(Register!(root));
+mixin(Export!(Floor));

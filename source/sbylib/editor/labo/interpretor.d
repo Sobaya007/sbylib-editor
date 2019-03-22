@@ -18,10 +18,16 @@ class Interpretor {
         import sbylib.editor.compiler.compiler : Compiler;
         import sbylib.editor.project.moduleunit : Module;
         import sbylib.editor.util : importPath;
+        import std.file : write;
+        import std.path : buildPath;
+        import sbylib.editor.util : sbyDir;
 
         alias SModule = Module!(string);
 
-        auto mod = new SModule(proj, Compiler.compileFromSource(createCode(input), importPath));
+        auto fileName = sbyDir.buildPath("test.d");
+        fileName.write(createCode(input));
+
+        auto mod = new SModule(proj, Compiler.compile(fileName, importPath), fileName);
         scope (exit) mod.destroy();
 
         return mod.run();
@@ -41,7 +47,25 @@ class Interpretor {
     }
 
     private string createCode(string input) {
-        import std.string : replace;
+        import std.algorithm : map;
+        import std.array : array;
+        import std.format : format;
+        import std.regex : matchAll, ctRegex;
+        import std.string : replace, split;
+
+        auto variableList = input
+            .matchAll(ctRegex!`\$\{(.*?)\}`)
+            .map!(m => m.hit)
+            .array;
+
+        foreach (v; variableList) {
+
+            auto name = v[2..$-1]; // "${name}"[2..$-1] == "name"
+            if (name !in proj)
+                throw new Exception(format!`"%s" is not defined.`(v));
+            auto type = proj[name].type.toString.split(".")[$-1];
+            input = input.replace(v, format!`project.get!(%s)("%s")`(type, name));
+        }
 
         return createCode().replace("${input}", input);
     }
@@ -54,6 +78,10 @@ class Interpretor {
     }
 
     private string createCode() {
+        import std.algorithm : map, filter;
+        import std.array : join;
+        import std.string : replace;
+
         return q{
             import sbylib.editor;
             import sbylib.graphics;
@@ -71,6 +99,8 @@ class Interpretor {
             }
 
             mixin(Register!(func));
-        };
+        }.replace("${import}",
+            proj.moduleList.values
+            .map!(m => format!`import %s;`(m.name)).join("\n"));
     }
 }

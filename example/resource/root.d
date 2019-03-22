@@ -1,13 +1,6 @@
-module sbylib.editor.labo.labo;
-
+import sbylib.editor;
 import sbylib.graphics;
 import sbylib.wrapper.glfw;
-import sbylib.editor.labo.cameracontrol : CameraControl;
-import sbylib.editor.labo.console : Console;
-import sbylib.editor.labo.consolecontrol : ConsoleControl;
-import sbylib.editor.project.project : Project;
-import sbylib.editor.project.moduleunit : Register;
-import sbylib.editor.gui.gui : GUI;
 
 void root(Project proj, EventContext context) {
 
