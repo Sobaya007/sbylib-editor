@@ -72,19 +72,18 @@ class Console : Entity {
 
         long lastDot = -1;
         while (true) {
-            auto pos = input[lastDot+1..$].countUntil(".");
+            auto pos = input[lastDot+1..$].countUntil(".")+1;
             if (pos <= 0) break;
             lastDot += pos;
         }
 
-        this.input = this.input[0..lastDot+2];
+        this.input = this.input[0..lastDot+1];
         this.input ~= candidates[0];
         cursorPos = this.input.length;
         updateTexture();
 
         with (GUI()) {
             lineHeight = 18.pixel;
-            text(lastDot.to!string);
             text(candidates.join("\n"));
             waitKey();
             start();
