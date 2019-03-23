@@ -11,7 +11,9 @@ void func(Project project, EventContext context) {
             geometry = GeometryLibrary().buildBox();
 
             auto e = build();
+            e.blend = true;
             auto e2 = build();
+            e2.blend = true;
 
             when(Frame).run({ 
                 with (canvas.getContext()) {
@@ -21,16 +23,9 @@ void func(Project project, EventContext context) {
                 e.rot *= mat3.axisAngle(vec3(1,0,0), 1.deg);
             });
 
-            e2.pos += vec3(0,1,0);
+            e2.pos += vec3(0,3,0);
             e2.scale *= 0.5;
         }
-
-        when((Ctrl + KeyButton.KeyR).pressed).run({
-            auto oldTitle = window.title;
-            window.title = "reloading...";
-            project.load();
-            window.title = oldTitle;
-        });
     }
 }
 
@@ -58,7 +53,7 @@ class TestMaterial : Material {
         out vec4 fragColor;
 
         void main() {
-            fragColor = vec4(uv2, 1,1);
+            fragColor = vec4(uv2, 0, 0.5);
         }
     };
 }

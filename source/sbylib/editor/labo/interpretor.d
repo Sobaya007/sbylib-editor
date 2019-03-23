@@ -86,6 +86,8 @@ class Interpretor {
             import sbylib.editor;
             import sbylib.graphics;
 
+            mixin(Register!(func));
+
             string func(Project project, EventContext context) {
                 import std.conv : to;
                 with (project) {
@@ -97,8 +99,6 @@ class Interpretor {
                     }
                 }
             }
-
-            mixin(Register!(func));
         }.replace("${import}",
             proj.moduleList.values
             .map!(m => format!`import %s;`(m.name)).join("\n"));

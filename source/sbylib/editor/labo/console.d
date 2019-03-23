@@ -96,7 +96,7 @@ class Console : Entity {
         import sbylib.editor.labo.interpretor : Interpretor;
         import std.algorithm : max;
         import std.conv : to;
-        import std.string : split;
+        import std.string : split, replace;
 
         if (input.length == 0) return;
 
@@ -111,7 +111,7 @@ class Console : Entity {
         }
 
         this.lines ~= ">"~input;
-        this.lines ~= output.split("\n");
+        this.lines ~= output.replace("\t", "   ").split("\n");
         this.input = "";
         this.cursorPos = 0;
 

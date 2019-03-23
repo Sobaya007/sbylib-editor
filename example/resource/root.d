@@ -70,7 +70,7 @@ private void setupCamera(Project proj) {
 
         auto camera = build();
         camera.pos = vec3(0);
-        proj["camera"] = cast(Camera)camera;
+        proj["camera"] = camera;
 
         proj["cameraControl"] = new CameraControl(camera);
     }

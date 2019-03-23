@@ -9,13 +9,17 @@ class Module(RetType) {
     import sbylib.editor.compiler.dll : DLL;
     import sbylib.editor.project.global : Global;
     import sbylib.editor.project.project : Project;
+    import std.datetime : SysTime;
 
     private alias FuncType = RetType function(Project, EventContext);
+    private alias Hash = ubyte[16];
 
     private EventContext context;
     private FuncType func;
     private DLL dll;
     private Project proj;
+    private string file;
+    private Hash hash;
     string name;
 
     this(Project proj, string file) {
@@ -29,6 +33,7 @@ class Module(RetType) {
 
     this(Project proj, DLL dll, string file) {
         import std.format : format;
+        import std.file : readText;
 
         auto getFunctionName = dll.loadFunction!(string function())(getFunctionNameName(file));
         auto functionName = getFunctionName();
@@ -37,9 +42,11 @@ class Module(RetType) {
         auto getModuleName = dll.loadFunction!(string function())(getModuleNameName(file));
         this.name = getModuleName();
 
+        this.file = file;
         this.dll = dll;
         this.proj = proj;
         this.context = new EventContext;
+        this.hash = this.createHash(this.file);
     }
 
     void destroy() {
@@ -49,11 +56,21 @@ class Module(RetType) {
         //this.dll.unload();
     }
 
+    bool shouldReload() {
+        return this.hash != this.createHash(this.file);
+    }
+
     auto run() {
         scope(exit) context.bind();
         return func(proj, context);
     }
 
+    private auto createHash(string file) {
+        import std.file : readText;
+        import std.digest.md : md5Of;
+
+        return md5Of(readText(file));
+    }
 }
 
 enum Register(alias f, string n = __FILE__) = format!q{

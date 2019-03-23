@@ -2,6 +2,8 @@ import sbylib.graphics;
 import sbylib.editor;
 import sbylib.wrapper.glfw;
 
+mixin(Register!(root));
+
 void root(Project proj, EventContext context) {
 
     setupWindow(proj);
@@ -173,6 +175,3 @@ class Floor : Entity {
     mixin ImplUniform;
     mixin ImplBuilder;
 }
-
-mixin(Register!(root));
-mixin(Export!(Floor));

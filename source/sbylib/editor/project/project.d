@@ -59,6 +59,22 @@ class Project {
         }
 	}
 
+    void reload() {
+        import std.file : dirEntries, SpanMode;
+        import sbylib.editor.project.metainfo : MetaInfo;
+
+        foreach (file; MetaInfo().projectFileList) {
+            this.reload(file);
+        }
+    }
+
+	void reload(string file) 
+        in (file in moduleList)
+    {
+        if (moduleList[file].shouldReload)
+            load(file);
+	}
+
     auto get(T)(string name) {
         return this[name].get!T;
     }

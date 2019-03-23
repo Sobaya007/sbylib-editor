@@ -7,7 +7,7 @@ void entryPoint(Project proj, EventContext context) {
         when((Ctrl + KeyButton.KeyR).pressed).run({
             auto oldTitle = window.title;
             window.title = "reloading...";
-            proj.load();
+            proj.reload();
             window.title = oldTitle;
         });
     }
