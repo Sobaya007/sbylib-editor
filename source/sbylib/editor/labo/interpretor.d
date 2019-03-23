@@ -43,7 +43,7 @@ class Interpretor {
         auto file = sbyDir.buildPath("test.d");
         file.write(createCode(input));
 
-        return dcd.complete(file, cursorPos + cursorOffset);
+        return dcd.complete(file, cursorPos + cursorOffset + 1);
     }
 
     private string createCode(string input) {
