@@ -115,10 +115,10 @@ class GUI {
     }
 
     void waitKey() {
-        import sbylib.graphics : Key, pressed, when, grun = run;
+        import sbylib.graphics : Key, KeyButton, pressed, when, grun = run;
         with (actionSequence) {
             run((resolve) {
-                when(Key.pressed).grun((uint) { resolve(); });
+                when(Key.pressed).grun((KeyButton b) { resolve(); });
             });
         }
     }

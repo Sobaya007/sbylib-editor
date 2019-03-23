@@ -17,7 +17,7 @@ class ConsoleControl {
                     console.render();
                 }
             });
-            when(Key.pressed).run((uint codepoint) {
+            when(Char.typed).run((uint codepoint) {
                 import std.conv : to;
 
                 auto c = codepoint.to!char;
