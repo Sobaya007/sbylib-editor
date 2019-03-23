@@ -27,7 +27,7 @@ class Interpretor {
         auto fileName = sbyDir.buildPath("test.d");
         fileName.write(createCode(input));
 
-        auto mod = new SModule(proj, Compiler.compile(fileName, importPath), fileName);
+        auto mod = new SModule(proj, Compiler.compile([fileName] ~ proj.moduleList.keys, importPath), fileName);
         scope (exit) mod.destroy();
 
         return mod.run();
@@ -85,6 +85,7 @@ class Interpretor {
         return q{
             import sbylib.editor;
             import sbylib.graphics;
+            ${import}
 
             mixin(Register!(func));
 
