@@ -14,23 +14,31 @@ class Interpretor {
         this.dcd = new DCD;
     }
 
-    string interpret(string input) {
+    auto interpret(string input) {
         import sbylib.editor.compiler.compiler : Compiler;
+        import sbylib.editor.compiler.dll : DLL;
         import sbylib.editor.project.moduleunit : Module;
-        import sbylib.editor.util : importPath;
+        import sbylib.editor.util : importPath, sbyDir;
         import std.file : write;
         import std.path : buildPath;
-        import sbylib.editor.util : sbyDir;
 
         alias SModule = Module!(string);
 
         auto fileName = sbyDir.buildPath("test.d");
         fileName.write(createCode(input));
 
-        auto mod = new SModule(proj, Compiler.compile([fileName] ~ proj.moduleList.keys, importPath), fileName);
-        scope (exit) mod.destroy();
-
-        return mod.run();
+        auto result = new Event!string;
+        Compiler.compile([fileName] ~ proj.moduleList.keys, importPath)
+        .run((DLL dll) {
+            auto mod = new SModule(proj, dll, fileName);
+            scope (exit) mod.destroy();
+            mod.run()
+            .run((string output) {
+                result.fire(output);
+            });
+        })
+        .error((Exception e) => result.throwError(e));
+        return result;
     }
 
     auto complete(string input, long cursorPos) {

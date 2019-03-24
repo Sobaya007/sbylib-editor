@@ -102,19 +102,18 @@ class Console : Entity {
         history ~= input;
         historyPos = history.length;
 
-        string output;
-        try {
-            output = interpretor.interpret(input);
-        } catch (Exception e) {
-            output = e.msg;
-        }
+        alias f = (string output) {
+            this.lines ~= ">"~input;
+            this.lines ~= output.replace("\t", "   ").split("\n");
+            this.input = "";
+            this.cursorPos = 0;
 
-        this.lines ~= ">"~input;
-        this.lines ~= output.replace("\t", "   ").split("\n");
-        this.input = "";
-        this.cursorPos = 0;
+            updateTexture();
+        };
 
-        updateTexture();
+        interpretor.interpret(input)
+            .run((string output) => f(output))
+            .error((Exception e) => f(e.msg));
     }
 
     void shiftHistory(int shift) {
