@@ -1,5 +1,6 @@
 import sbylib.editor;
 import sbylib.graphics;
+import root;
 
 void func(Project project, EventContext context) {
     auto console = project.get!Console("console");

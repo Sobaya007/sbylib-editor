@@ -26,8 +26,9 @@ class Module(RetType) {
         import std.format : format;
         import sbylib.editor.compiler.compiler : Compiler;
         import sbylib.editor.util : importPath;
+        import sbylib.editor.project.metainfo : MetaInfo;
 
-        auto dll = Compiler.compile(file, importPath);
+        auto dll = Compiler.compile(MetaInfo().rootFile ~ MetaInfo().projectFileList, importPath);
         this(proj, dll, file);
     }
 
