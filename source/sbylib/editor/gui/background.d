@@ -32,7 +32,7 @@ class Background : Entity, Item {
         this.depthWrite = false;
 
         with (context()) {
-            when(this.beforeRender).run({
+            when(this.beforeRender).then({
                 this.pixelSize = parent.pixelSize;
             });
         }

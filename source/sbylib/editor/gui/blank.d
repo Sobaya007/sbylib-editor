@@ -41,22 +41,22 @@ class Blank : Entity, Item, IAction {
         this.offsetX = 0;
 
         with (context()) {
-            when(Char.typed).run((uint codepoint) {
+            when(Char.typed).then((uint codepoint) {
                 import std.conv : to;
 
                 auto c = codepoint.to!char;
                 write(c);
             });
-            when(KeyButton.Enter.pressed).run({
+            when(KeyButton.Enter.pressed).then({
                 this.notifyFinish();
             });
-            when(KeyButton.BackSpace.pressed).run({
+            when(KeyButton.BackSpace.pressed).then({
                 backSpace();
             });
-            when(KeyButton.Left.pressed).run({
+            when(KeyButton.Left.pressed).then({
                 shift(-1);
             });
-            when(KeyButton.Right.pressed).run({
+            when(KeyButton.Right.pressed).then({
                 shift(+1);
             });
         }

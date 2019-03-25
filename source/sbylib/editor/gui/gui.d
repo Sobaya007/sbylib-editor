@@ -26,7 +26,7 @@ class GUI {
     string fontPath;
 
     this() {
-        import sbylib.graphics : Canvas, CanvasBuilder, getContext, when, Frame, run, KeyButton, pressed;
+        import sbylib.graphics : Canvas, CanvasBuilder, getContext, when, Frame, then, KeyButton, pressed;
         import sbylib.wrapper.glfw : Window;
         import sbylib.editor.util : fontPath;
 
@@ -43,14 +43,14 @@ class GUI {
         }
    
         with (context()) {
-            when(Frame).run({
+            when(Frame).then({
                 with (windowCanvas.getContext()) {
                     this.rootContainer.render2D();
                 }
             });
         }
         context.bind();
-        when(actionSequence.finish).run({
+        when(actionSequence.finish).then({
             context.unbind();
         });
     }
@@ -115,10 +115,10 @@ class GUI {
     }
 
     void waitKey() {
-        import sbylib.graphics : Key, KeyButton, pressed, when, grun = run;
+        import sbylib.graphics : Key, KeyButton, pressed, when, gthen = then;
         with (actionSequence) {
             run((resolve) {
-                when(Key.pressed).grun((KeyButton b) { resolve(); });
+                when(Key.pressed).gthen((KeyButton b) { resolve(); });
             });
         }
     }

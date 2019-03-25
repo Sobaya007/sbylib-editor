@@ -17,14 +17,14 @@ void root(Project proj, EventContext context) {
 
     cameraControl.bind();
     with (cameraControl()) {
-        when((Ctrl + KeyButton.KeyP).pressed).run({
+        when((Ctrl + KeyButton.KeyP).pressed).then({
             cameraControl.unbind();
             consoleControl.bind();
         });
     }
 
     with (consoleControl()) {
-        when(KeyButton.Escape.pressed).run({
+        when(KeyButton.Escape.pressed).then({
             cameraControl.bind();
             consoleControl.unbind();
         });
@@ -90,7 +90,7 @@ private void setupFloor(Project proj) {
 
     auto canvas = proj.get!Canvas("canvas");
     auto camera = proj.get!Camera("camera");
-    when(Frame).run({
+    when(Frame).then({
         with (canvas.getContext()) {
             clear(ClearMode.Color, ClearMode.Depth);
             camera.capture(f);

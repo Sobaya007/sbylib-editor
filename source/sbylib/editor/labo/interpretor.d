@@ -29,11 +29,11 @@ class Interpretor {
 
         auto result = new Event!string;
         Compiler.compile([fileName] ~ proj.moduleList.keys, importPath)
-        .run((DLL dll) {
+        .then((DLL dll) {
             auto mod = new SModule(proj, dll, fileName);
             scope (exit) mod.destroy();
             mod.run()
-            .run((string output) {
+            .then((string output) {
                 result.fire(output);
             });
         })

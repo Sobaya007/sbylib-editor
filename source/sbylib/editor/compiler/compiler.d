@@ -28,7 +28,7 @@ static:
         import std.datetime : msecs;
         import std.process : execute;
         import std.format : format;
-        import sbylib.graphics : VoidEvent, when, Frame, finish, run;
+        import sbylib.graphics : VoidEvent, when, Frame, finish, then;
         import sbylib.editor.util : versions;
 
         auto tid = thisTid;
@@ -46,7 +46,7 @@ static:
 
         auto result = new Event!DLL;
         VoidEvent e;
-        e = when(Frame).run({
+        e = when(Frame).then({
             receiveTimeout(1.msecs,
                 (string output) {
                     e.kill();

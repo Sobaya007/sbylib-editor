@@ -22,8 +22,8 @@ class CameraControl {
 
         with (context()) {
             vec2 basePoint;
-            when(MouseButton.Button1.pressed).run({basePoint = mouse.pos;});
-            when(MouseButton.Button1.pressed).run({
+            when(MouseButton.Button1.pressed).then({basePoint = mouse.pos;});
+            when(MouseButton.Button1.pressed).then({
                 if (window.cursorMode == CursorMode.Normal) {
                     window.cursorMode = CursorMode.Disabled;
                 } else {
@@ -32,15 +32,15 @@ class CameraControl {
             });
 
             alias accel = (vec3 v) { this.arrivalPos += v * 0.03; };
-            when(KeyButton.KeyA.pressing).run({ accel(-camera.rot.column[0]); });
-            when(KeyButton.KeyD.pressing).run({ accel(+camera.rot.column[0]); });
-            when(KeyButton.KeyQ.pressing).run({ accel(-camera.rot.column[1]); });
-            when(KeyButton.KeyE.pressing).run({ accel(+camera.rot.column[1]); });
-            when(KeyButton.KeyW.pressing).run({ accel(-camera.rot.column[2]); });
-            when(KeyButton.KeyS.pressing).run({ accel(+camera.rot.column[2]); });
-            when((Ctrl + KeyButton.KeyD).pressed).run({ window.shouldClose = true; });
+            when(KeyButton.KeyA.pressing).then({ accel(-camera.rot.column[0]); });
+            when(KeyButton.KeyD.pressing).then({ accel(+camera.rot.column[0]); });
+            when(KeyButton.KeyQ.pressing).then({ accel(-camera.rot.column[1]); });
+            when(KeyButton.KeyE.pressing).then({ accel(+camera.rot.column[1]); });
+            when(KeyButton.KeyW.pressing).then({ accel(-camera.rot.column[2]); });
+            when(KeyButton.KeyS.pressing).then({ accel(+camera.rot.column[2]); });
+            when((Ctrl + KeyButton.KeyD).pressed).then({ window.shouldClose = true; });
 
-            when(mouse.moved).run({
+            when(mouse.moved).then({
                 if (window.cursorMode == CursorMode.Normal) return;
                 auto dif = -(mouse.pos - basePoint) * 0.003;
                 auto angle = dif.length.rad;
@@ -53,7 +53,7 @@ class CameraControl {
                 basePoint = mouse.pos;
             });
 
-            when(Frame).run({
+            when(Frame).then({
                 camera.pos = mix(camera.pos, arrivalPos, 0.1);
                 camera.rot = slerp(camera.rot.toQuaternion, arrivalRot, 0.1).normalize.toMatrix3;
             });

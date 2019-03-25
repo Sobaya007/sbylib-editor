@@ -59,7 +59,7 @@ class Question : Item, IAction {
 
     override void start() {
         with (context()) {
-            when(KeyButton.Left.pressed).run({
+            when(KeyButton.Left.pressed).then({
                 if (selectionIndex.isNull) {
                     selectionIndex = 0;
                     selectionList[selectionIndex].focus = true;
@@ -70,7 +70,7 @@ class Question : Item, IAction {
                 selectionIndex--;
                 selectionList[selectionIndex].focus = true;
             });
-            when(KeyButton.Right.pressed).run({
+            when(KeyButton.Right.pressed).then({
                 if (selectionIndex.isNull) {
                     selectionIndex = selectionList.length-1;
                     selectionList[selectionIndex].focus = true;
@@ -81,10 +81,10 @@ class Question : Item, IAction {
                 selectionIndex++;
                 selectionList[selectionIndex].focus = true;
             });
-            when(KeyButton.Enter.pressed).run({
+            when(KeyButton.Enter.pressed).then({
                 if (selectionIndex.isNull) return;
                 auto action = selectionList[selectionIndex].select();
-                when(action.finish).run({ this.notifyFinish(); });
+                when(action.finish).then({ this.notifyFinish(); });
             });
         }
         context.bind();

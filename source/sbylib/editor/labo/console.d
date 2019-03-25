@@ -32,7 +32,7 @@ class Console : Entity {
         this.lineHeight = 30.pixel;
         updateTexture();
 
-        when(this.beforeRender).run({
+        when(this.beforeRender).then({
             auto window = Window.getCurrentWindow();
             this.pixelWidth = this.width.pixel;
             this.pixelHeight = this.height.pixel;
@@ -112,7 +112,7 @@ class Console : Entity {
         };
 
         interpretor.interpret(input)
-            .run((string output) => f(output))
+            .then((string output) => f(output))
             .error((Exception e) => f(e.msg));
     }
 

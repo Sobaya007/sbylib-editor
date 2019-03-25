@@ -65,7 +65,7 @@ class Container : Item {
                 .interpolate(Interpolate.SmoothInOut)
                 .period(200.msecs);
 
-                when(finish).run({
+                when(finish).then({
                     cnt--;
                     if (cnt == 0) resolve();
                 });

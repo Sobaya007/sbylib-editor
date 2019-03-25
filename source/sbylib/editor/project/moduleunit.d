@@ -28,7 +28,7 @@ class Module(RetType) {
         import sbylib.editor.compiler.compiler : Compiler;
         import sbylib.editor.util : importPath;
         import sbylib.editor.project.metainfo : MetaInfo;
-        import sbylib.graphics : run, error;
+        import sbylib.graphics : then, error;
 
         this.file = file;
         this.proj = proj;
@@ -37,7 +37,7 @@ class Module(RetType) {
 
         this.buildFinish = new VoidEvent;
         Compiler.compile(MetaInfo().rootFile ~ MetaInfo().projectFileList, importPath)
-        .run((DLL dll) {
+        .then((DLL dll) {
             initFromDLL(dll);
             this.buildFinish.fire();
         })
@@ -64,7 +64,7 @@ class Module(RetType) {
     }
 
     auto run() {
-        import sbylib.graphics : Event, run, error, when, Frame, once;
+        import sbylib.graphics : Event, then, error, when, Frame, once;
 
         static if (is(RetType == void)) {
             alias Result = Event!();
@@ -76,12 +76,12 @@ class Module(RetType) {
             alias apply = { result.fire(func(proj, context)); };
         }
         if (buildFinish is null) {
-            when(Frame).run({
+            when(Frame).then({
                 context.bind();
                 apply();
             }).once();
         } else {
-            buildFinish.run({
+            buildFinish.then({
                 context.bind();
                 apply();
             })

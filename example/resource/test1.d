@@ -16,7 +16,7 @@ void func(Project project, EventContext context) {
             auto e2 = build();
             e2.blend = true;
 
-            when(Frame).run({ 
+            when(Frame).then({ 
                 with (canvas.getContext()) {
                     camera.capture(e);
                     camera.capture(e2);
