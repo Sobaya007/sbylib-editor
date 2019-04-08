@@ -19,7 +19,7 @@ class DLL {
             version (Posix) {
                 import core.sys.posix.dlfcn : dlerror;
                 import std.string : fromStringz;
-                throw new Exception(dlerror().fromStringz.format!"%s");
+                throw new Exception(dlerror().fromStringz.format!"Could not load shared library:%s");
             } else {
                 throw new Exception(format!"Could not load shared library: %s"(dllname));
             }
