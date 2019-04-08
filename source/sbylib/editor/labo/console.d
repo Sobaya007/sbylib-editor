@@ -18,6 +18,7 @@ class Console : Entity {
     private string[] history;
     private long historyPos;
     private Interpretor interpretor;
+    private bool writable = true;
     string fontPath;
 
     this(Project proj) {
@@ -41,6 +42,7 @@ class Console : Entity {
     }
 
     void write(string text) {
+        if (writable is false) return;
         input = input[0..cursorPos] ~ text ~ input[cursorPos..$];
         cursorPos += text.length;
         updateTexture();
@@ -65,6 +67,8 @@ class Console : Entity {
         import std.conv : to;
         import std.string : join;
         import sbylib.editor;
+
+        if (writable is false) return;
 
         auto candidates = interpretor.complete(input, cursorPos);
 
@@ -102,12 +106,18 @@ class Console : Entity {
         history ~= input;
         historyPos = history.length;
 
-        alias f = (string output) {
-            this.lines ~= ">"~input;
-            this.lines ~= output.replace("\t", "   ").split("\n");
-            this.input = "";
-            this.cursorPos = 0;
+        auto input = this.input;
+        this.lines ~= ">"~input;
+        this.lines ~= "processing...";
+        this.input = "";
+        this.cursorPos = 0;
+        this.writable = false;
+        updateTexture();
 
+        alias f = (string output) {
+            this.lines = this.lines[0..$-1];
+            this.lines ~= output.replace("\t", "   ").split("\n");
+            this.writable = true;
             updateTexture();
         };
 
@@ -117,6 +127,7 @@ class Console : Entity {
     }
 
     void shiftHistory(int shift) {
+        if (writable is false) return;
         if (historyPos + shift < 0) return;
         if (historyPos + shift > history.length) return;
         historyPos += shift;

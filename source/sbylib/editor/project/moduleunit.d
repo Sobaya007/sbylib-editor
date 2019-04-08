@@ -68,11 +68,11 @@ class Module(RetType) {
         static if (is(RetType == void)) {
             alias Result = Event!();
             auto result = new Result;
-            alias apply = { func(proj, context); result.fire(); };
+            alias apply = { func(proj, context); result.fireOnce(); };
         } else {
             alias Result = Event!(RetType);
             auto result = new Result;
-            alias apply = { result.fire(func(proj, context)); };
+            alias apply = { result.fireOnce(func(proj, context)); };
         }
         if (buildFinish is null) {
             when(Frame).then({

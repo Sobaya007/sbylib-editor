@@ -34,29 +34,34 @@ class Project {
         MetaInfo().projectFileList ~= file;
     }
 
-	void load() {
+	auto load() {
         import std.file : dirEntries, SpanMode;
+        import sbylib.graphics : IEvent, when, allFinish;
         import sbylib.editor.project.metainfo : MetaInfo;
 
+        IEvent[] eventList;
         foreach (file; MetaInfo().projectFileList) {
-            this.load(file);
+            eventList ~= this.load(file);
         }
+        return when(eventList.allFinish);
 	}
 
-	void load(string file) {
-        try {
-            if (file in moduleList)
-                moduleList[file].destroy();
+	auto load(string file) {
+        import sbylib.graphics : error;
 
-            moduleList[file] = new VModule(this, file);
-            moduleList[file].run();
-        } catch (Exception e) {
-            if (this.loadErrorHandler) {
-                this.loadErrorHandler(e);
-            } else {
-                assert(false, e.msg);
-            }
-        }
+        if (file in moduleList)
+            moduleList[file].destroy();
+
+        moduleList[file] = new VModule(this, file);
+        return moduleList[file]
+            .run()
+            .error((Exception e) {
+                if (this.loadErrorHandler) {
+                    this.loadErrorHandler(e);
+                } else {
+                    assert(false, e.msg);
+                }
+            });
 	}
 
     void reload() {

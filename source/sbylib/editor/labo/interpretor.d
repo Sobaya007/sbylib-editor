@@ -31,11 +31,11 @@ class Interpretor {
         Compiler.compile([fileName] ~ proj.moduleList.keys)
         .then((DLL dll) {
             auto mod = new SModule(proj, dll, fileName);
-            scope (exit) mod.destroy();
-            mod.run()
+            auto proc = mod.run()
             .then((string output) {
-                result.fire(output);
+                result.fireOnce(output);
             });
+            when(proc.finish).then({ mod.destroy(); });
         })
         .error((Exception e) => result.throwError(e));
         return result;
