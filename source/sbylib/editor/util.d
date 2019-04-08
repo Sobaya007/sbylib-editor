@@ -14,6 +14,48 @@ string[] importPath() {
     return result;
 }
 
+string[] linkerFlag() {
+    import std.process : executeShell;
+    import std.json : parseJSON;
+    import std.algorithm : filter, map, canFind;
+    import std.string : endsWith;
+    import std.format : format;
+    import std.array : join;
+    import std.path : buildPath;
+
+    auto root = executeShell("dub describe").output.parseJSON.object;
+    auto packages = root["packages"].array;
+    auto rootPackage = packages
+        .map!(p => p.object)
+        .filter!(obj => obj["name"].str == root["rootPackage"].str)
+        .front;
+
+    alias findPackage = (string name) => packages.filter!(p => p.object["name"].str == name).front.object;
+
+    string[] dependentPackageList(string root) {
+        void func(string root, ref string[] current) {
+            foreach (dependency; findPackage(root)["dependencies"]
+                    .array
+                    .map!(s => s.str)
+                    .filter!(n => current.canFind(n) is false)) {
+                current ~= dependency;
+                func(dependency, current);
+            }
+        }
+        string[] result;
+        func(root, result);
+        return result;
+    }
+
+    return dependentPackageList(rootPackage["name"].str)
+        .filter!(n => n != "sbylib-editor")
+        .map!(n => findPackage(n))
+        .filter!(p => p["targetFileName"].str.endsWith(".a"))
+        .map!(p => [format!"-L-L%s"(buildPath(p["path"].str, p["targetPath"].str)),
+                    format!"-L-l%s"(p["targetFileName"].str[3..$-2])])
+        .join;
+}
+
 string[] versions() {
     import std.algorithm : filter;
     import std.array : array;

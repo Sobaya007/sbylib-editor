@@ -18,7 +18,7 @@ class Interpretor {
         import sbylib.editor.compiler.compiler : Compiler;
         import sbylib.editor.compiler.dll : DLL;
         import sbylib.editor.project.moduleunit : Module;
-        import sbylib.editor.util : importPath, sbyDir;
+        import sbylib.editor.util : sbyDir;
         import std.file : write;
         import std.path : buildPath;
 
@@ -28,7 +28,7 @@ class Interpretor {
         fileName.write(createCode(input));
 
         auto result = new Event!string;
-        Compiler.compile([fileName] ~ proj.moduleList.keys, importPath)
+        Compiler.compile([fileName] ~ proj.moduleList.keys)
         .then((DLL dll) {
             auto mod = new SModule(proj, dll, fileName);
             scope (exit) mod.destroy();

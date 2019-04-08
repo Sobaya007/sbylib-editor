@@ -26,7 +26,6 @@ class Module(RetType) {
     this(Project proj, string file) {
         import std.format : format;
         import sbylib.editor.compiler.compiler : Compiler;
-        import sbylib.editor.util : importPath;
         import sbylib.editor.project.metainfo : MetaInfo;
         import sbylib.graphics : then, error;
 
@@ -36,7 +35,7 @@ class Module(RetType) {
         this.hash = this.createHash(this.file);
 
         this.buildFinish = new VoidEvent;
-        Compiler.compile(MetaInfo().rootFile ~ MetaInfo().projectFileList, importPath)
+        Compiler.compile(MetaInfo().rootFile ~ MetaInfo().projectFileList)
         .then((DLL dll) {
             initFromDLL(dll);
             this.buildFinish.fire();
