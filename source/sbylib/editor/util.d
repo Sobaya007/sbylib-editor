@@ -1,42 +1,30 @@
 module sbylib.editor.util;
 
 string[] importPath() {
-    import std.algorithm : filter, map, sort, uniq;
     import std.array : array;
-    import std.path : dirName;
-    import std.process : executeShell;
-    import std.string : split;
-    import sbylib.editor.project.metainfo : MetaInfo;
+    import sbylib.editor.tools.dub : Dub;
+    import dmd.frontend : findImportPaths;
 
-    auto result = executeShell("dub describe --import-paths").output.split("\n").filter!(s => s.length > 0).array;
-    result ~= MetaInfo().projectFileList.map!(file => file.dirName).array.sort.uniq.array;
-
-    return result;
+    return
+        Dub.getImportPath()
+        ~ findImportPaths().array;
 }
 
-string[] linkerFlag() {
+auto dependentLibraries() {
     import std.process : executeShell;
     import std.json : parseJSON;
-    import std.algorithm : filter, map, canFind;
+    import std.algorithm : filter, map, canFind, sort, uniq;
     import std.string : endsWith;
     import std.format : format;
-    import std.array : join;
+    import std.array : join, array;
     import std.path : buildPath;
+    import sbylib.editor.tools.dub : Dub;
 
-    auto root = executeShell("dub describe").output.parseJSON.object;
-    auto packages = root["packages"].array;
-    auto rootPackage = packages
-        .map!(p => p.object)
-        .filter!(obj => obj["name"].str == root["rootPackage"].str)
-        .front;
-
-    alias findPackage = (string name) => packages.filter!(p => p.object["name"].str == name).front.object;
+    const data = Dub.describe();
 
     string[] dependentPackageList(string root) {
         void func(string root, ref string[] current) {
-            foreach (dependency; findPackage(root)["dependencies"]
-                    .array
-                    .map!(s => s.str)
+            foreach (dependency; data.findPackage(root).dependencies
                     .filter!(n => current.canFind(n) is false)) {
                 current ~= dependency;
                 func(dependency, current);
@@ -47,22 +35,25 @@ string[] linkerFlag() {
         return result;
     }
 
-    return dependentPackageList(rootPackage["name"].str)
+    struct Result {
+        string[] librarySearchPathList;
+        string[] libraryPathList;
+    }
+
+    Result result;
+
+    foreach (p; dependentPackageList(data.rootPackageName)
         .filter!(n => n != "sbylib-editor")
-        .map!(n => findPackage(n))
-        .filter!(p => p["targetFileName"].str.endsWith(".a"))
-        .map!(p => [format!"-L-L%s"(buildPath(p["path"].str, p["targetPath"].str)),
-                    format!"-L-l%s"(p["targetFileName"].str[3..$-2])])
-        .join;
-}
+        .map!(n => data.findPackage(n))
+        .filter!(p => p.targetFileName.endsWith(".a"))) {
 
-string[] versions() {
-    import std.algorithm : filter;
-    import std.array : array;
-    import std.process : executeShell;
-    import std.string : split;
+        result.librarySearchPathList ~= buildPath(p.path, p.targetPath);
+        result.libraryPathList ~= p.targetFileName[3..$-2]; //libxxxx.a
+    }
 
-    return executeShell("dub describe --data=versions").output.split.filter!(s => s.length > 0).array;
+    result.librarySearchPathList = result.librarySearchPathList.sort.uniq.array;
+    result.libraryPathList = result.libraryPathList.sort.uniq.array;
+    return result;
 }
 
 string fontPath(string filename) {

@@ -15,15 +15,18 @@ class Project {
     Global global;
     alias global this;
 
-    this() {
+    static void initialize() {
         import sbylib.editor.project.metainfo : MetaInfo;
-        this.load(MetaInfo().rootFile);
+        auto proj = new Project;
+        proj.loadErrorHandler = &proj.defaultErrorHandler;
+        proj.load(MetaInfo().rootFile);
     }
+
+    private this() {}
 
     void addFile(string file) {
         import std.file : exists, mkdirRecurse, copy;
-        import std.path : dirName;
-        import sbylib.editor.util : resourcePath;
+        import std.path : dirName; import sbylib.editor.util : resourcePath;
         import sbylib.editor.project.metainfo : MetaInfo;
 
         if (file.dirName.exists is false)
@@ -82,5 +85,14 @@ class Project {
 
     auto get(T)(string name) {
         return this[name].get!T;
+    }
+
+    private void defaultErrorHandler(Exception e) {
+        import std.stdio : writeln;
+        import std.string : replace;
+
+        auto msg = e.msg;
+        msg = msg.replace("Error", "\x1b[31mError\x1b[39m");
+        writeln(msg);
     }
 }

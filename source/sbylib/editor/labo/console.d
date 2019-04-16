@@ -147,22 +147,17 @@ class Console : Entity {
 
         const windowWidth = Window.getCurrentWindow().width;
 
+        auto store = GlyphStore(this.fontPath, this.lineHeight.pixel);
         Glyph[][] glyphLines;
-        with (CharTextureBuilder()) {
-            font = this.fontPath;
-            height = this.lineHeight.pixel;
-
-            void handleLine(string line) {
-                Glyph[] glyphLine;
-                foreach (i, c; line) {
-                    character = c;
-                    glyphLine ~= build();
-                }
-                glyphLines ~= glyphLine;
+        void handleLine(string line) {
+            Glyph[] glyphLine;
+            foreach (c; line) {
+                glyphLine ~= store.getGlyph(c);
             }
-            foreach (line; this.lines) handleLine(line);
-            handleLine(">" ~ input);
+            glyphLines ~= glyphLine;
         }
+        foreach (line; this.lines) handleLine(line);
+        handleLine(">" ~ input);
 
         Glyph[][] glyphLines2;
         foreach (line; glyphLines) {

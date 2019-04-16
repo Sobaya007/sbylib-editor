@@ -38,21 +38,25 @@ class TextBox : Entity, Item {
         this.textCount = 0;
         updateTexture();
         with (builder) {
-            //import std.algorithm : min;
-            //import std.datetime : Clock;
+            enum Animate = false;
+            static if (Animate) {
+                import std.algorithm : min;
+                import std.datetime : Clock;
 
-            //auto starttime = Clock.currTime;
-            //run((resolve) {
-            //    auto e = when(Frame).run({
-            //        this.textCount = min(this.text.length, (Clock.currTime - starttime).total!"msecs" / 10);
-            //        updateTexture();
-            //    }).until(() => this.textCount == this.text.length);
-            //    when(e.finish).run({ resolve(); });
-            //});
-            run({ 
-                this.textCount = this.text.length;
-                this.updateTexture();
-            });
+                auto starttime = Clock.currTime;
+                run((resolve) {
+                    auto e = when(Frame).run({
+                        this.textCount = min(this.text.length, (Clock.currTime - starttime).total!"msecs" / 10);
+                        updateTexture();
+                    }).until(() => this.textCount == this.text.length);
+                    when(e.finish).run({ resolve(); });
+                });
+            } else {
+                run({ 
+                    this.textCount = this.text.length;
+                    this.updateTexture();
+                });
+            }
 
         }
     }
@@ -80,15 +84,10 @@ class TextBox : Entity, Item {
     }
 
     private Glyph[] createGlyphList(dstring txt) {
+        auto store = GlyphStore(root.fontPath, root.lineHeight);
         Glyph[] glyphList;
-        with (CharTextureBuilder()) {
-            font = root.fontPath;
-            height = root.lineHeight;
-
-            foreach (c; txt) {
-                character = c;
-                glyphList ~= build();
-            }
+        foreach (c; txt) {
+            glyphList ~= store.getGlyph(c);
         }
         return glyphList;
     }

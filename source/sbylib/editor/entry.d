@@ -25,7 +25,7 @@ void startEditor() {
     auto meta = MetaInfo();
     scope(exit) meta.saveConfig();
 
-    auto project = new Project;
+    Project.initialize();
 
     while (window.shouldClose == false) {
         FrameEventWatcher.update();

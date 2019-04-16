@@ -9,13 +9,18 @@ import std.traits : isSomeString;
 
 class GUI {
 
-    static GUI opCall() {
-        return new GUI;
+    private static GUI[string] cache;
+
+    static GUI opCall(string name = "") {
+        if (auto r = name in cache)
+            return *r;
+        return cache[name] = new GUI(name);
     }
 
     ActionSequence actionSequence;
     alias actionSequence this;
 
+    private string name;
     private EventContext context;
     private Container rootContainer;
     private Blank[string] blankList;
@@ -25,11 +30,12 @@ class GUI {
     Pixel lineHeight = 30.pixel;
     string fontPath;
 
-    this() {
+    private this(string name) {
         import sbylib.graphics : Canvas, CanvasBuilder, getContext, when, Frame, then, KeyButton, pressed;
         import sbylib.wrapper.glfw : Window;
         import sbylib.editor.util : fontPath;
 
+        this.name = name;
         this.fontPath = fontPath("consola.ttf");
         this.context = new EventContext;
         this.rootContainer = new Container(this);
@@ -53,6 +59,10 @@ class GUI {
         when(actionSequence.finish).then({
             context.unbind();
         });
+    }
+
+    ~this() {
+        cache.remove(this.name);
     }
 
     void background(Color color) {

@@ -18,6 +18,7 @@ class MetaInfo {
     @config(FilePath) {
         string rootFile;
         string[] projectFileList;
+        string[string] lastCompileTime;
     }
 
     this() {

@@ -72,15 +72,10 @@ class Selection : Entity, Item {
         import std.algorithm : map, sum;
         import std.array : array;
 
+        auto store = GlyphStore(root.fontPath, root.lineHeight);
         Glyph[] glyphList;
-        with (CharTextureBuilder()) {
-            font = root.fontPath;
-            height = root.lineHeight;
-
-            foreach (i, c; value) {
-                character = c;
-                glyphList ~= build();
-            }
+        foreach (c; value) {
+            glyphList ~= store.getGlyph(c);
         }
 
         Canvas dstCanvas;

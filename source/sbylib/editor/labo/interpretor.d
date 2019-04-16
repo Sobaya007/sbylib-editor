@@ -28,7 +28,7 @@ class Interpretor {
         fileName.write(createCode(input));
 
         auto result = new Event!string;
-        Compiler.compile([fileName] ~ proj.moduleList.keys)
+        Compiler.compile(fileName)
         .then((DLL dll) {
             auto mod = new SModule(proj, dll, fileName);
             auto proc = mod.run()
@@ -67,7 +67,6 @@ class Interpretor {
             .array;
 
         foreach (v; variableList) {
-
             auto name = v[2..$-1]; // "${name}"[2..$-1] == "name"
             if (name !in proj)
                 throw new Exception(format!`"%s" is not defined.`(v));

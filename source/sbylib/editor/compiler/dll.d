@@ -7,12 +7,20 @@ class DLL {
 
     this(string dllname) {
         import std.format : format;
-        import std.file : exists;
+        import std.file : exists, getSize;
         import core.runtime : Runtime;
+        import core.thread : Thread, seconds;
 
         this.dllname = dllname;
 
-        assert(dllname.exists);
+        if (dllname.exists is false)
+            throw new Exception(format!"Shared library '%s' does not exist"(dllname));
+
+        while (dllname.getSize() == 0) {
+            import std.stdio : writeln;
+            writeln("zzz...");
+            Thread.sleep(1.seconds);
+        }
 
         this.lib = Runtime.loadLibrary(dllname);
         if (lib is null) {

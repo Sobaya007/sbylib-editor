@@ -35,7 +35,7 @@ class Module(RetType) {
         this.hash = this.createHash(this.file);
 
         this.buildFinish = new VoidEvent;
-        Compiler.compile(MetaInfo().rootFile ~ MetaInfo().projectFileList)
+        Compiler.compile(file)
         .then((DLL dll) {
             initFromDLL(dll);
             this.buildFinish.fire();
