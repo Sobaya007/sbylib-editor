@@ -21,9 +21,10 @@ static:
         import std.algorithm : map, all;
         import std.array : array;
         import std.concurrency : spawn, send, receiveTimeout, Tid, thisTid;
+        import std.conv : to;
         import std.datetime : msecs, seconds, SysTime, Clock;
         import std.process : execute;
-        import std.file : timeLastModified, getSize;
+        import std.file : timeLastModified, getSize, exists;
         import std.format : format;
         import std.functional : memoize;
         import std.stdio : writefln;
@@ -33,29 +34,37 @@ static:
         import sbylib.editor.tools : Dub, DScanner;
         import sbylib.editor.util : importPath, dependentLibraries;
 
-        const dependencies = memoize!dependentLibraries();
-        const linkerFlags = dependencies.librarySearchPathList.map!(p =>"-L" ~ p).array
-            ~ dependencies.libraryPathList.map!(p => "-l" ~ p).array;
-
-        const command = createCompileCommand(
-                inputFileName ~ DScanner.importList(inputFileName),
+        auto dependencies = memoize!dependentLibraries();
+        const config = CompileConfig(
+                inputFileName,
+                DScanner.importList(inputFileName),
                 outputFileName,
                 memoize!importPath,
-                linkerFlags);
+                dependencies.libraryPathList,
+                dependencies.librarySearchPathList);
 
-        spawn(function (immutable(string[]) command, string key,
-                    string outputFileName, Tid tid) {
+        const command = config.createCommand();
+
+        spawn(function (immutable(string[]) command,
+                    string outputFileName, immutable SysTime lastModified, Tid tid) {
+
+            if (outputFileName.exists
+                    && outputFileName.timeLastModified > lastModified) {
+                writefln("Cache found: %s", outputFileName);
+                send(tid, cast(string)null);
+                return;
+            }
+
             writefln("Compiling %s", outputFileName);
 
             auto dmd = execute(command);
 
-            MetaInfo().lastCompileTime[key] = Clock.currTime.toISOString;
             if (dmd.status != 0) {
                 send(tid, format!"Compilation failed\n%s"(dmd.output));
                 return;
             }
             send(tid, cast(string)null);
-        }, command.idup, inputFileName, outputFileName, thisTid);
+        }, command.idup, outputFileName, config.lastModified.to!(immutable SysTime), thisTid);
 
         auto result = new Event!DLL;
         VoidEvent e;
@@ -72,17 +81,52 @@ static:
         });
         return result;
     }
+}
 
-    private string[] createCompileCommand(const(string[]) inputFileList, string outputFile,
-            const(string[]) importPathList, const(string[]) linkerFlags) {
+private struct CompileConfig {
+    string   mainFile;
+    string[] inputFiles;
+    string   outputFile;
+    string[] importPath;
+    string[] libraryPath;
+    string[] librarySearchPath;
+
+    string[] createCommand() const {
         import std.algorithm : map;
         import std.array : array;
 
         return ["dmd"]
-            ~ inputFileList
+            ~ mainFile
+            ~ inputFiles
             ~ ("-of="~ outputFile)
             ~ "-shared"
-            ~ importPathList.map!(p => "-I" ~ p).array
-            ~ linkerFlags.map!(f => "-L" ~ f).array;
+            ~ importPath.map!(p => "-I" ~ p).array
+            ~ librarySearchPath.map!(f => "-L-L" ~ f).array
+            ~ libraryPath.map!(f => "-L-l" ~ f[3..$-2]).array;
+    }
+
+    auto lastModified() const {
+        import std.algorithm : map, reduce, max;
+        import std.array : array;
+        import std.file : timeLastModified;
+
+        return ([mainFile]
+             ~ inputFiles
+             ~ importPath
+             ~ libraryPath.map!(p => search(p)).array)
+            .map!(p => p.timeLastModified)
+            .reduce!max;
+    }
+
+    private auto search(string p) const {
+        import std.algorithm : map, filter;
+        import std.array : front;
+        import std.file : exists;
+        import std.path : buildPath;
+
+        return librarySearchPath
+            .map!(d => d.buildPath(p))
+            .filter!(p => p.exists)
+            .front;
     }
 }

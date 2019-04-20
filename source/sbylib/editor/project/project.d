@@ -79,8 +79,7 @@ class Project {
 	void reload(string file) 
         in (file in moduleList)
     {
-        if (moduleList[file].shouldReload)
-            load(file);
+        load(file);
 	}
 
     auto get(T)(string name) {

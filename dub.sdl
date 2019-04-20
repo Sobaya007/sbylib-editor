@@ -11,4 +11,3 @@ libs "dl" "phobos2"
 
 dependency "sbylib-graphics" version="*"
 dependency "dconfig" version="~master"
-dependency "dmd" version="*"

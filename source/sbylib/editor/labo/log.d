@@ -20,10 +20,11 @@ class Log : Entity {
     mixin Material!(LogMaterial);
     mixin ImplUniform;
 
-    GlyphGeometry geom;
-    private string[] lines = [""];
-
     Pixel lineHeight;
+    private string[] lines = [""];
+    private bool shouldUpdate = false;
+    private GlyphGeometry geom;
+
 
     this() {
         import sbylib.editor.util : fontPath;
@@ -33,6 +34,11 @@ class Log : Entity {
         this.depthWrite = false;
         this.blend = true;
         this.lineHeight = 30.pixel;
+        this.tex = geom.glyphStore.texture;
+
+        when(this.beforeRender).then({
+            update();
+        });
 
         when(Frame).then({
             this.render();
@@ -48,7 +54,7 @@ class Log : Entity {
         if (this.lines.length > 10)
             this.lines = this.lines[$-10..$];
 
-        update();
+        shouldUpdate = true;
     }
 
     private void update() {
@@ -63,6 +69,8 @@ class Log : Entity {
 
         this.pixelHeight = lineHeight;
         this.scale.x = this.scale.y;
+        this.pixelX = -pixel(Window.getCurrentWindow().width/2);
+        this.pixelY = +pixel(Window.getCurrentWindow().height/2);
 
         this.tex = geom.glyphStore.texture;
     }
@@ -75,7 +83,7 @@ class Log : Entity {
         int x, y, h;
         foreach (gm; glyphs) {
             if (gm.isBreak) {
-                y += h;
+                y -= h;
                 x = h = 0;
             } else {
                 auto g = gm.toGlyph;

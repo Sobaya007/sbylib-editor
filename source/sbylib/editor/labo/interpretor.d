@@ -24,10 +24,16 @@ class Interpretor {
 
         alias SModule = Module!(string);
 
-        auto fileName = sbyDir.buildPath("test.d");
-        fileName.write(createCode(input));
-
         auto result = new Event!string;
+
+        auto fileName = sbyDir.buildPath("test.d");
+        try {
+            fileName.write(createCode(input));
+        } catch (Exception e) {
+            when(Frame).then({ result.fireOnce(e.msg); }).once;
+            return result;
+        }
+
         Compiler.compile(fileName)
         .then((DLL dll) {
             auto mod = new SModule(proj, dll, fileName);

@@ -34,17 +34,6 @@ void func(Project project, EventContext context) {
                 writeln("message", cnt++);
             }
         });
-
-        with (TextureEntity.Builder()) {
-            geometry = GeometryLibrary().buildPlane();
-            auto e = build();
-            when(Frame).then({
-                with (canvas.getContext()) {
-                    e.tex = Log().geom.glyphStore.texture;
-                    e.render();
-                }
-            });
-        }
     }
 }
 

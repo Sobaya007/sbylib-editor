@@ -19,7 +19,6 @@ class Module(RetType) {
     private DLL dll;
     private Project proj;
     private string file;
-    private Hash hash;
     string name;
     private VoidEvent buildFinish;
 
@@ -32,7 +31,6 @@ class Module(RetType) {
         this.file = file;
         this.proj = proj;
         this.context = new EventContext;
-        this.hash = this.createHash(this.file);
 
         this.buildFinish = new VoidEvent;
         Compiler.compile(file)
@@ -47,7 +45,6 @@ class Module(RetType) {
         this.file = file;
         this.proj = proj;
         this.context = new EventContext;
-        this.hash = this.createHash(this.file);
         this.initFromDLL(dll);
     }
 
@@ -56,10 +53,6 @@ class Module(RetType) {
 
         this.context.kill();
         //this.dll.unload();
-    }
-
-    bool shouldReload() {
-        return this.hash != this.createHash(this.file);
     }
 
     auto run() {

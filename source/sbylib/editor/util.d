@@ -1,13 +1,9 @@
 module sbylib.editor.util;
 
 string[] importPath() {
-    import std.array : array;
     import sbylib.editor.tools.dub : Dub;
-    import dmd.frontend : findImportPaths;
 
-    return
-        Dub.getImportPath()
-        ~ findImportPaths().array;
+    return Dub.getImportPath()~ findPhobosPath();
 }
 
 auto dependentLibraries() {
@@ -43,12 +39,11 @@ auto dependentLibraries() {
     Result result;
 
     foreach (p; dependentPackageList(data.rootPackageName)
-        .filter!(n => n != "sbylib-editor")
         .map!(n => data.findPackage(n))
         .filter!(p => p.targetFileName.endsWith(".a"))) {
 
         result.librarySearchPathList ~= buildPath(p.path, p.targetPath);
-        result.libraryPathList ~= p.targetFileName[3..$-2]; //libxxxx.a
+        result.libraryPathList ~= p.targetFileName;
     }
 
     result.librarySearchPathList = result.librarySearchPathList.sort.uniq.array;
@@ -102,4 +97,42 @@ string sbyDir() {
         mkdirRecurse(dir);
 
     return dir;
+}
+
+private string findPhobosPath() {
+    import std.algorithm : map, filter;
+    import std.array : front;
+    import std.conv : to;
+    import std.exception : ifThrown;
+    import std.file : exists, write;
+    import std.path : buildPath;
+    import std.process : execute;
+    import std.string : chomp, split;
+    import sbylib.editor.project : MetaInfo;
+
+    if (MetaInfo().phobosPath.exists)
+        return MetaInfo().phobosPath;
+
+    auto file = sbyDir.buildPath("tmp.d");
+    file.write(q{
+/+dub.sdl:
+dependency "dmd" version="~master"
++/
+void main()
+{
+    import dmd.frontend;
+    import std.stdio;
+    findImportPaths().writeln;
+}
+});
+    
+    auto result = execute(["dub", file]).output
+    .split("\n")
+    .map!(line => line.to!(string[]).ifThrown([""])[0])
+    .filter!(line => line.length > 0)
+    .front;
+    MetaInfo().phobosPath = result;
+    MetaInfo().saveConfig();
+
+    return result;
 }

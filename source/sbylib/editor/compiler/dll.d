@@ -16,21 +16,19 @@ class DLL {
         if (dllname.exists is false)
             throw new Exception(format!"Shared library '%s' does not exist"(dllname));
 
-        while (dllname.getSize() == 0) {
-            import std.stdio : writeln;
-            writeln("zzz...");
-            Thread.sleep(1.seconds);
+        foreach (i; 0..10) {
+            this.lib = Runtime.loadLibrary(dllname);
+            if (lib is null)
+                Thread.sleep(1.seconds);
+            else
+                return;
         }
-
-        this.lib = Runtime.loadLibrary(dllname);
-        if (lib is null) {
-            version (Posix) {
-                import core.sys.posix.dlfcn : dlerror;
-                import std.string : fromStringz;
-                throw new Exception(dlerror().fromStringz.format!"Could not load shared library:%s");
-            } else {
-                throw new Exception(format!"Could not load shared library: %s"(dllname));
-            }
+        version (Posix) {
+            import core.sys.posix.dlfcn : dlerror;
+            import std.string : fromStringz;
+            throw new Exception(dlerror().fromStringz.format!"Could not load shared library:%s");
+        } else {
+            throw new Exception(format!"Could not load shared library: %s"(dllname));
         }
     }
 
