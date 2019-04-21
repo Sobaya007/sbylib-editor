@@ -33,7 +33,7 @@ class Log : Entity {
         this.depthTest = true;
         this.depthWrite = false;
         this.blend = true;
-        this.lineHeight = 30.pixel;
+        this.lineHeight = 18.pixel;
         this.tex = geom.glyphStore.texture;
 
         when(this.beforeRender).then({
@@ -46,13 +46,19 @@ class Log : Entity {
     }
 
     void writeln(Args...)(Args args) {
-        static foreach (arg; args) {
+        static foreach (arg; args) {{
             import std.conv : to;
-            this.lines[$-1] ~= arg.to!string;
-        }
+            import std.string : split;
+            auto ss = arg.to!string.split("\n");
+            this.lines[$-1] ~= ss[0];
+            foreach (i; 1..ss.length)
+                this.lines ~= ss[i];
+        }}
         this.lines.length += 1;
-        if (this.lines.length > 10)
-            this.lines = this.lines[$-10..$];
+        
+        const maxLines = Window.getCurrentWindow().height / lineHeight - 1;
+        if (this.lines.length > maxLines)
+            this.lines = this.lines[$-maxLines..$];
 
         shouldUpdate = true;
     }
@@ -63,7 +69,7 @@ class Log : Entity {
 
         const maxWidth = Window.getCurrentWindow().width;
 
-        auto glyphLines = geom.glyphStore.toGlyph(this.lines, maxWidth);
+        auto glyphLines = geom.glyphStore.toGlyph(this.lines, maxWidth, lineHeight);
 
         renderGlyph(glyphLines);
 
@@ -126,65 +132,24 @@ class LogMaterial : Material {
     });
 }
 
-private auto toGlyph(GlyphStore store, string[] lines, int maxWidth) {
-    int x;
+private auto toGlyph(GlyphStore store, string[] lines, int maxWidth, int lineHeight) {
     G[] result;
     foreach (line; lines) {
+        long x;
         foreach (c; line) {
             auto g = store.toGlyph(c);
-            if (x + g.advance < maxWidth) result ~= g;
-            else result ~= [Break, g];
+            const w = lineHeight * g.advance / g.maxHeight;
+            if (x + w < maxWidth) {
+                result ~= g;
+                x += w;
+            } else {
+                result ~= [Break, g];
+                x = w;
+            }
         }
         result ~= Break;
     }
     return result;
-    //import std.array : front, popFront, empty;
-
-    //struct Result {
-    //    GlyphStore store;
-    //    string[] lines;
-    //    int maxWidth;
-    //    int x;
-
-    //    G front() {
-    //        if (lines.front.empty) {
-    //            return Break;
-    //        } else {
-    //            auto g = store.toGlyph(lines.front.front);
-    //            if (x + g.advance < maxWidth) {
-    //                return g;
-    //            } else {
-    //                return Break;
-    //            }
-    //        }
-    //    }
-
-    //    void popFront() {
-    //        if (lines.front.empty) {
-    //            lines.popFront;
-    //            x = 0;
-    //        } else {
-    //            const g = this.front;
-    //            assert(g !is Break);
-    //            if (x + g.advance < maxWidth) {
-    //                lines.front.popFront;
-    //                x += g.advance;
-    //            } else {
-    //                lines.front.popFront;
-    //                x = 0;
-    //            }
-    //        }
-    //    }
-
-    //    bool empty() {
-    //        return lines.empty;
-    //    }
-
-    //    auto dup() {
-    //        return Result(store, lines.dup, maxWidth);
-    //    }
-    //}
-    //return Result(store, lines.dup, maxWidth);
 }
 
 private auto toGlyph(GlyphStore store, dchar c) {

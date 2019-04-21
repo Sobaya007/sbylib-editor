@@ -12,7 +12,6 @@ class Module(RetType) {
     import std.datetime : SysTime;
 
     private alias FuncType = RetType function(Project, EventContext);
-    private alias Hash = ubyte[16];
 
     private EventContext context;
     private FuncType func;
@@ -49,8 +48,6 @@ class Module(RetType) {
     }
 
     void destroy() {
-        import sbylib.graphics;
-
         this.context.kill();
         //this.dll.unload();
     }
@@ -80,13 +77,6 @@ class Module(RetType) {
             .error((Exception e) => result.throwError(e));
         }
         return result;
-    }
-
-    private auto createHash(string file) {
-        import std.file : readText;
-        import std.digest.md : md5Of;
-
-        return md5Of(readText(file));
     }
 
     private void initFromDLL(DLL dll) {

@@ -1,0 +1,4 @@
+module ${moduleName};
+
+public:
+${importList}

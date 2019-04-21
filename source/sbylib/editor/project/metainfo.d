@@ -4,7 +4,7 @@ import dconfig;
 
 class MetaInfo {
 
-    private enum FilePath = ".sbylib/projectfile";
+    private enum FilePath = "project.json";
 
     mixin HandleConfig;
 
@@ -16,14 +16,15 @@ class MetaInfo {
     }
 
     @config(FilePath) {
+        string projectName;
         string rootFile;
-        string[] projectFileList;
         string phobosPath;
     }
 
     this() {
-        import std.file : exists, mkdirRecurse, write, copy;
-        import std.path : dirName;
+        import std.file : exists, mkdirRecurse, write, copy, isFile, isDir;
+        import std.format : format;
+        import std.path : dirName, buildPath;
         import sbylib.editor.util : resourcePath;
 
         if (FilePath.exists is false) {
@@ -33,13 +34,26 @@ class MetaInfo {
 
         initializeConfig();
 
-        if (this.rootFile == "") {
-            this.rootFile = "resource/root.d";
+        if (this.projectName == "") 
+            this.projectName = "project";
 
-            if (this.rootFile.dirName.exists is false)
-                this.rootFile.dirName.mkdirRecurse();
+        if (this.projectName.exists is false)
+            this.projectName.mkdirRecurse();
 
-            copy(resourcePath("root.d"), this.rootFile);
-        }
+        if (this.projectName.isDir is false)
+            throw new Exception(format!"%s is not a directory"(this.projectName));
+        if (this.rootFile == "")
+            this.rootFile = "root.d";
+
+        const root = this.projectName.buildPath(this.rootFile);
+
+        if (root.dirName.exists is false)
+            root.dirName.mkdirRecurse();
+
+        if (root.exists && root.isFile is false)
+            throw new Exception(format!"%s is not a file"(root));
+
+        if (root.exists is false)
+            copy(resourcePath("root.d"), root);
     }
 }

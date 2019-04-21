@@ -4,19 +4,10 @@ class Dub {
 static:
 
     string[] getImportPath() {
-        import std.algorithm : map, sort, uniq;
-        import std.array : array;
-        import std.path : dirName;
-        import std.string : split;
         import sbylib.editor.project.metainfo : MetaInfo;
 
         auto result = describe("--import-paths");
-        result ~= MetaInfo().projectFileList
-            .map!(file => file.dirName)
-            .array
-            .sort
-            .uniq
-            .array;
+        result ~= MetaInfo().projectName;
 
         return result;
     }

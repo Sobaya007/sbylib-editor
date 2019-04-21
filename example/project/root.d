@@ -1,6 +1,8 @@
-import sbylib.editor;
 import sbylib.graphics;
+import sbylib.editor;
 import sbylib.wrapper.glfw;
+
+mixin(Register!(root));
 
 void root(Project proj, EventContext context) {
 
@@ -10,6 +12,7 @@ void root(Project proj, EventContext context) {
     setupFloor(proj);
     setupConsole(proj);
 
+    auto window = proj.get!Window("window");
     auto cameraControl = proj.get!CameraControl("cameraControl");
     auto consoleControl = proj.get!ConsoleControl("consoleControl");
 
@@ -28,14 +31,22 @@ void root(Project proj, EventContext context) {
         });
     }
 
+    with (context()) {
+        when((Ctrl + KeyButton.KeyR).pressed).then({
+            auto oldTitle = window.title;
+            window.title = "reloading...";
+            proj.reload();
+            window.title = oldTitle;
+        });
+    }
+
     proj.loadErrorHandler = (Exception e) {
-        with (GUI()) {
-            lineHeight = 18.pixel;
-            background(Color(0,0,0,0.5));
-            text(e.msg);
-            waitKey();
-            start();
+        with (Log()) {
+            writeln(e.msg);
         }
+
+        import std.stdio : writeln;
+        writeln(e.msg);
     };
 
     proj.load();
@@ -70,7 +81,7 @@ private void setupCamera(Project proj) {
 
         auto camera = build();
         camera.pos = vec3(0);
-        proj["camera"] = camera;
+        proj["camera"] = cast(Camera)camera;
 
         proj["cameraControl"] = new CameraControl(camera);
     }
@@ -173,5 +184,3 @@ class Floor : Entity {
     mixin ImplUniform;
     mixin ImplBuilder;
 }
-
-mixin(Register!(root));
