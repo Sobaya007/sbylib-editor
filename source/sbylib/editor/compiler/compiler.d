@@ -59,6 +59,9 @@ static:
 
             auto dmd = execute(command);
 
+            import std.stdio : writeln;
+            writeln(dmd.output);
+
             if (dmd.status != 0) {
                 send(tid, format!"Compilation failed\n%s"(dmd.output));
                 return;
@@ -96,6 +99,7 @@ private struct CompileConfig {
         import std.array : array;
 
         return ["dmd"]
+            ~ "-L=-fuse-ld=gold"
             ~ mainFile
             ~ inputFiles
             ~ ("-of="~ outputFile)
