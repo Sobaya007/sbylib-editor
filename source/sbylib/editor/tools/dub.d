@@ -1,13 +1,19 @@
 module sbylib.editor.tools.dub;
 
+import std.algorithm : all;
+import std.file : exists;
+
 class Dub {
 static:
 
-    string[] getImportPath() {
+    string[] getImportPath() 
+        out (r; r.all!(p => p.exists))
+    {
+        import std.path : absolutePath; 
         import sbylib.editor.project.metainfo : MetaInfo;
 
         auto result = describe("--import-paths");
-        result ~= MetaInfo().projectName;
+        result ~= absolutePath(MetaInfo().projectName);
 
         return result;
     }

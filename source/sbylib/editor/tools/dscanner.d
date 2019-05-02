@@ -1,9 +1,15 @@
 module sbylib.editor.tools.dscanner;
 
+import std.algorithm : all;
+import std.conv : to;
+import std.file : exists;
+
 class DScanner {
 static:
 
-    string[] importList(string file) {
+    string[] importList(string file) 
+        out (r; r.all!(exists), r.to!string)
+    {
         import std.algorithm : map, filter;
         import std.array : join, array;
         import std.path : isValidPath;

@@ -138,7 +138,7 @@ private auto toGlyph(GlyphStore store, string[] lines, int maxWidth, int lineHei
         long x;
         foreach (c; line) {
             auto g = store.toGlyph(c);
-            const w = lineHeight * g.advance / g.maxHeight;
+            const w = 2 * lineHeight * g.advance / g.maxHeight;
             if (x + w < maxWidth) {
                 result ~= g;
                 x += w;

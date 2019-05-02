@@ -108,5 +108,5 @@ private string getModuleNameName(string n) {
 private string convFileName(string n) {
     import std.string : replace;
 
-    return n.replace("/", "_").replace(".", "_");
+    return n.replace("/", "_").replace(".", "_").replace("-", "_");
 }

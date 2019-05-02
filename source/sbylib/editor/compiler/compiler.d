@@ -3,6 +3,8 @@ module sbylib.editor.compiler.compiler;
 public import sbylib.editor.compiler.dll : DLL;
 public import sbylib.graphics.event.event : Event;
 
+import std.datetime : SysTime;
+
 class Compiler {
 static:
 
@@ -18,17 +20,11 @@ static:
     }
 
     private auto compileDLL(string inputFileName, string outputFileName) {
-        import std.algorithm : map, all;
-        import std.array : array;
-        import std.concurrency : spawn, send, receiveTimeout, Tid, thisTid;
+        import std.concurrency : spawn, send, receiveTimeout, receiveOnly, Tid, thisTid, ownerTid;
         import std.conv : to;
-        import std.datetime : msecs, seconds, SysTime, Clock;
-        import std.process : execute;
-        import std.file : timeLastModified, getSize, exists;
-        import std.format : format;
+        import std.datetime : seconds, msecs;
+        import std.file : timeLastModified;
         import std.functional : memoize;
-        import std.stdio : writefln;
-        import core.thread : Thread;
         import sbylib.graphics : VoidEvent, when, Frame, finish, then;
         import sbylib.editor.project : MetaInfo;
         import sbylib.editor.tools : Dub, DScanner;
@@ -45,44 +41,65 @@ static:
 
         const command = config.createCommand();
 
-        spawn(function (immutable(string[]) command,
-                    string outputFileName, immutable SysTime lastModified, Tid tid) {
+        struct Result {
+            string output;
+            Tid tid;
+        }
 
-            if (outputFileName.exists
-                    && outputFileName.timeLastModified > lastModified) {
-                writefln("Cache found: %s", outputFileName);
-                send(tid, cast(string)null);
-                return;
+        auto tid = spawn((immutable(string[]) command, string outputFileName, immutable SysTime lastModified) {
+            auto output = build(command, outputFileName, lastModified);
+            while (true) {
+                send(ownerTid, Result(output, thisTid));
+                auto success = receiveOnly!bool;
+                if (success) break;
             }
-
-            writefln("Compiling %s", outputFileName);
-
-            auto dmd = execute(command);
-
-            import std.stdio : writeln;
-            writeln(dmd.output);
-
-            if (dmd.status != 0) {
-                send(tid, format!"Compilation failed\n%s"(dmd.output));
-                return;
-            }
-            send(tid, cast(string)null);
-        }, command.idup, outputFileName, config.lastModified.to!(immutable SysTime), thisTid);
+        }, command.idup, outputFileName, config.lastModified.to!(immutable SysTime));
 
         auto result = new Event!DLL;
         VoidEvent e;
         e = when(Frame).then({
-            receiveTimeout(1.msecs,
-                (string output) {
-                    e.kill();
-                    if (output is null) {
-                        result.fire(new DLL(outputFileName));
-                    } else {
-                        result.throwError(new Exception(output));
-                    }
-                });
+            receiveTimeout(1.msecs, (Result r) {
+                if (tid != r.tid) {
+                    send(tid, false);
+                    return;
+                }
+                send(tid, true);
+                e.kill();
+                if (r.output == "") {
+                    result.fire(new DLL(outputFileName));
+                } else {
+                    result.throwError(new Exception(r.output));
+                }
+            });
         });
         return result;
+    }
+
+    private static string build(immutable(string[]) command, string outputFileName,
+            immutable SysTime lastModified) {
+
+        import std.concurrency : send, ownerTid;
+        import std.format : format;
+        import std.file : exists, timeLastModified;
+        import std.process : execute;
+        import std.stdio : writefln;
+
+        if (outputFileName.exists
+                && outputFileName.timeLastModified > lastModified) {
+            writefln("Cache found: %s", outputFileName);
+            return "";
+        }
+
+        writefln("Compiling %s", outputFileName);
+
+        auto dmd = execute(command);
+
+        writefln("Compile finished\n%s", dmd.output);
+
+        if (dmd.status != 0) {
+            return format!"Compilation failed\n%s"(dmd.output);
+        }
+        return "";
     }
 }
 

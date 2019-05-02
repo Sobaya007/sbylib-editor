@@ -64,12 +64,19 @@ private void setupWindow(Project proj) {
 private void setupCanvas(Project proj) {
     auto window = Window.getCurrentWindow();
     auto videoMode = Screen.getPrimaryScreen().currentVideoMode;
+    Canvas canvas;
     with (CanvasBuilder()) {
         color.enable = true;
         depth.enable = true;
         size = [videoMode.width.pixel/2, videoMode.height.pixel-200.pixel];
-        proj["canvas"] = build(window);
+        proj["canvas"] = canvas = build(window);
     }
+
+    when(Frame).then({
+        with (canvas.getContext()) {
+            clear(ClearMode.Color, ClearMode.Depth);
+        }
+    });
 }
 
 private void setupCamera(Project proj) {
@@ -101,7 +108,6 @@ private void setupFloor(Project proj) {
     auto camera = proj.get!Camera("camera");
     when(Frame).then({
         with (canvas.getContext()) {
-            clear(ClearMode.Color, ClearMode.Depth);
             camera.capture(f);
         }
     });

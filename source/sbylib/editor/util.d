@@ -1,9 +1,10 @@
 module sbylib.editor.util;
 
 string[] importPath() {
+    import std.path : absolutePath;
     import sbylib.editor.tools.dub : Dub;
 
-    return Dub.getImportPath()~ findPhobosPath();
+    return Dub.getImportPath() ~ findPhobosPath() ~ ".";
 }
 
 auto dependentLibraries() {

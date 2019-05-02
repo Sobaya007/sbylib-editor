@@ -12,6 +12,8 @@ class CameraControl {
     private vec3 arrivalPos;
     private quat arrivalRot;
 
+    float speed = 0.03;
+
     this(Camera camera) {
         this.context = new EventContext;
         this.camera = camera;
@@ -31,7 +33,7 @@ class CameraControl {
                 }
             });
 
-            alias accel = (vec3 v) { this.arrivalPos += v * 0.03; };
+            alias accel = (vec3 v) { this.arrivalPos += v * speed; };
             when(KeyButton.KeyA.pressing).then({ accel(-camera.rot.column[0]); });
             when(KeyButton.KeyD.pressing).then({ accel(+camera.rot.column[0]); });
             when(KeyButton.KeyQ.pressing).then({ accel(-camera.rot.column[1]); });

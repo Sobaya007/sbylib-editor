@@ -235,7 +235,8 @@ class ConsoleMaterial : Material {
         uniform mat4 worldMatrix;
 
         void main() {
-            gl_Position = worldMatrix * position;
+            vec4 p = worldMatrix * position;
+            gl_Position = p;
             uv2 = vec2(uv.x, 1-uv.y);
         }
     });

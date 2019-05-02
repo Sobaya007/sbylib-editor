@@ -91,17 +91,19 @@ class Project {
 	}
 
     auto get(T)(string name) {
+        if (name !in this) return null;
         return this[name].get!T;
     }
 
     string[] projectFiles() {
         import std.algorithm : filter, map;
         import std.array : array;
-        import std.file : dirEntries, SpanMode;
+        import std.file : dirEntries, SpanMode, isFile;
         import std.path : baseName, buildPath;
         import sbylib.editor.project.metainfo : MetaInfo;
 
         return MetaInfo().projectName.dirEntries(SpanMode.breadth)
+            .filter!(entry => entry.isFile)
             .filter!(entry => entry.baseName != "package.d")
             .filter!(entry => entry != MetaInfo().projectName.buildPath(MetaInfo().rootFile))
             .map!(entry => cast(string)entry)
@@ -114,13 +116,13 @@ class Project {
         import std.conv : to;
         import std.file : dirEntries, SpanMode, readText, write, isDir, isFile;
         import std.format : format;
-        import std.path : buildPath, extension, stripExtension, baseName;
+        import std.path : buildPath, extension, stripExtension, baseName, relativePath;
         import std.string : replace;
         import sbylib.editor.project.metainfo : MetaInfo;
         import sbylib.editor.util : resourcePath;
 
-        foreach (entry; MetaInfo().projectName.dirEntries(SpanMode.breadth).map!(to!string).array
-                ~ MetaInfo().projectName) {
+        auto projectName = MetaInfo().projectName;
+        foreach (entry; projectName.dirEntries(SpanMode.breadth)) {
             if (entry.isFile) continue;
 
             const fileName = entry.buildPath("package.d");
@@ -128,14 +130,16 @@ class Project {
             auto dirImportList = entry
                 .dirEntries(SpanMode.shallow)
                 .filter!(e => e.isDir)
-                .map!(e => e.replace("/", "."))
+                .map!(e => e.relativePath(projectName))
+                .map!(p => p.replace("/", "."))
                 .map!(name => name.format!"import %s;")
                 .array;
             auto fileImportList = entry
                 .dirEntries(SpanMode.shallow)
                 .filter!(e => e.isFile)
-                .filter!(e => e.extension == ".d")
-                .filter!(e => e.baseName != "package.d")
+                .map!(e => e.relativePath(projectName))
+                .filter!(p => p.extension == ".d")
+                .filter!(p => p.baseName != "package.d")
                 .map!(e => e.stripExtension.replace("/", "."))
                 .map!(name => name.format!"import %s;")
                 .array;
