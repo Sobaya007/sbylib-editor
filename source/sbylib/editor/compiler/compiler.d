@@ -94,11 +94,10 @@ static:
 
         auto dmd = execute(command);
 
-        writefln("Compile finished\n%s", dmd.output);
-
         if (dmd.status != 0) {
             return format!"Compilation failed\n%s"(dmd.output);
         }
+        writefln("Compile finished %s\n%s", outputFileName, dmd.output);
         return "";
     }
 }

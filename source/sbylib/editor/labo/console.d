@@ -193,20 +193,22 @@ class Console : Entity {
             const y = cast(int)(yIndex) * this.lineHeight;
             int x;
             foreach (g; line) {
-                Canvas srcCanvas;
-                with (CanvasBuilder()) {
-                    size[0] = cast(int)g.width;
-                    size[1] = cast(int)g.height;
-                    color.enable = true;
-                    color.texture = g.texture;
-                    srcCanvas = build();
+                if (g.width > 0) {
+                    Canvas srcCanvas;
+                    with (CanvasBuilder()) {
+                        size[0] = cast(int)g.width;
+                        size[1] = cast(int)g.height;
+                        color.enable = true;
+                        color.texture = g.texture;
+                        srcCanvas = build();
+                    }
+                    int dstX = cast(int)(x+g.offsetX);
+                    int dstY = cast(int)(y+g.offsetY);
+                    dstCanvas.render(srcCanvas,
+                            0, 0, srcCanvas.size[0], srcCanvas.size[1],
+                            dstX, dstY, cast(int)(dstX+g.width), cast(int)(dstY+g.height),
+                            TextureFilter.Linear, BufferBit.Color);
                 }
-                int dstX = cast(int)(x+g.offsetX);
-                int dstY = cast(int)(y+g.offsetY);
-                dstCanvas.render(srcCanvas,
-                        0, 0, srcCanvas.size[0], srcCanvas.size[1],
-                        dstX, dstY, cast(int)(dstX+g.width), cast(int)(dstY+g.height),
-                        TextureFilter.Linear, BufferBit.Color);
 
                 x += g.advance;
 
