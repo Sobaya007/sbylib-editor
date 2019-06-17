@@ -34,6 +34,8 @@ void func(Project project, EventContext context) {
                 writeln("message", cnt++);
             }
         });
+
+        MessageWindow("po", "pressed!");
     }
 }
 

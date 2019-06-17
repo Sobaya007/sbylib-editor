@@ -5,6 +5,7 @@ import sbylib.wrapper.gl;
 import sbylib.wrapper.glfw;
 import sbylib.editor.project.metainfo : MetaInfo;
 import sbylib.editor.project.project : Project;
+import sbylib.editor.compiler.compiler : Compiler;
 
 void startEditor() {
 
@@ -26,6 +27,7 @@ void startEditor() {
     scope(exit) meta.saveConfig();
 
     Project.initialize();
+    scope (exit) Compiler.finalize();
 
     while (window.shouldClose == false) {
         FrameEventWatcher.update();

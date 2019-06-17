@@ -1,65 +1,86 @@
-module sbylib.editor.labo.log; 
+module sbylib.editor.labo.messagewindow; 
 
 import sbylib.graphics;
 import sbylib.editor.project.project : Project;
 import sbylib.editor.labo.interpretor : Interpretor;
+import sbylib.wrapper.glfw : Window, WindowBuilder;
 import std.typecons : Nullable;
 
-class Log : Entity {
+class MessageWindow {
 
-    static Log opCall() {
-        static __gshared Log cache;
-        if (cache is null)
-            cache = new Log;
-        return cache;
+    static opCall(string _title, string msg) {
+        auto c = Window.getCurrentWindow();
+        assert(c);
+        scope(exit) c.makeCurrent();
+
+        with (WindowBuilder()) {
+            width = 400.pixel;
+            height = 300.pixel;
+            title = _title;
+
+            defaultHints();
+            resizable = false;
+            visible = true;
+            decorated = true;
+            focused = true;
+            autoIconify = false;
+            floating = true;
+            maximized = false;
+            doublebuffer = true;
+            clientAPI = c.clientAPI;
+            contextVersionMajor = c.contextVersionMajor;
+            contextVersionMinor = c.contextVersionMinor;
+            contextRevision = c.contextRevision;
+            profile = c.profile;
+
+            auto window = buildWindow(c);
+            window.makeCurrent();
+
+            auto canvas = CanvasBuilder().build(window);
+            auto message = new Message(msg);
+
+            when(Frame).then({
+                auto current = Window.getCurrentWindow();
+                scope(exit) current.makeCurrent();
+
+                window.makeCurrent();
+                with (canvas.getContext()) {
+                    clear(ClearMode.Color, ClearMode.Depth);
+                    message.render();
+                    window.swapBuffers();
+                }
+            });
+
+            when(mouse.scrolled).then((vec2 scroll) {
+                message.pos.y += scroll.y * 0.02;
+            });
+        }
     }
+}
+
+class Message : Entity {
 
     mixin ImplPos;
-    mixin ImplScale;
     mixin ImplWorldMatrix;
-    mixin Material!(LogMaterial);
+    mixin Material!(MessageMaterial);
     mixin ImplUniform;
 
-    Pixel lineHeight;
-    private string[] lines = [""];
-    private bool shouldUpdate = false;
+    private Pixel lineHeight;
+    private string[] lines;
     private GlyphGeometry geom;
 
-    this() {
+    this(string lines) {
+        import std : split;
         import sbylib.editor.util : fontPath;
 
+        this.lines = lines.split("\n");
         this.geometry = geom = new GlyphGeometry(fontPath("consola.ttf"));
-        this.depthTest = true;
+        this.depthTest = false;
         this.depthWrite = false;
-        this.blend = true;
         this.lineHeight = 18.pixel;
         this.tex = geom.glyphStore.texture;
 
-        when(this.beforeRender).then({
-            update();
-        });
-
-        when(Frame).then({
-            this.render();
-        });
-    }
-
-    void writeln(Args...)(Args args) {
-        static foreach (arg; args) {{
-            import std.conv : to;
-            import std.string : split;
-            auto ss = arg.to!string.split("\n");
-            this.lines[$-1] ~= ss[0];
-            foreach (i; 1..ss.length)
-                this.lines ~= ss[i];
-        }}
-        this.lines.length += 1;
-        
-        const maxLines = Window.getCurrentWindow().height / lineHeight - 1;
-        if (this.lines.length > maxLines)
-            this.lines = this.lines[$-maxLines..$];
-
-        shouldUpdate = true;
+        this.update();
     }
 
     private void update() {
@@ -72,11 +93,6 @@ class Log : Entity {
 
         renderGlyph(glyphLines);
 
-        this.pixelHeight = lineHeight;
-        this.scale.x = this.scale.y;
-        this.pixelX = -pixel(Window.getCurrentWindow().width/2);
-        this.pixelY = +pixel(Window.getCurrentWindow().height/2);
-
         this.tex = geom.glyphStore.texture;
     }
 
@@ -85,7 +101,7 @@ class Log : Entity {
 
         geom.clear();
 
-        int x, y, h;
+        Pixel x, y, h;
         foreach (gm; glyphs) {
             if (gm.isBreak) {
                 y -= h;
@@ -93,19 +109,19 @@ class Log : Entity {
             } else {
                 auto g = gm.toGlyph;
                 renderGlyph(g, x, y);
-                x += g.advance;
+                x += g.advance.pixel;
                 h = cast(int)max(h, g.maxHeight);
             }
         }
     }
 
-    private void renderGlyph(Glyph g, int x, int y) {
-        auto s = 1.0 / g.maxHeight;
-        geom.addCharacter(g.character, vec2(x,y) * s, vec2(g.advance, g.maxHeight) * s);
+    private void renderGlyph(Glyph g, Pixel x, Pixel y) {
+        auto s = 2.0 / Window.getCurrentWindow().height * this.lineHeight / g.maxHeight;
+        geom.addCharacter(g.character, vec2(x,y) * s+vec2(-1,+1), vec2(g.advance, g.maxHeight) * s);
     }
 }
 
-class LogMaterial : Material {
+class MessageMaterial : Material {
     mixin VertexShaderSource!(q{
         #version 450
         in vec4 position;

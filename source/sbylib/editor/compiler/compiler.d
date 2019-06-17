@@ -8,52 +8,66 @@ import std.datetime : SysTime;
 class Compiler {
 static:
 
-    private uint seed;
+    private __gshared int[string] seedList;
+    private shared int[] compilingCount = new shared int[1];
 
-    auto compile(string fileName) {
-        import std.format : format;
-        import std.path : buildPath;
-        import sbylib.editor.util : sbyDir;
-
-        const dllName = sbyDir.buildPath(format!"%s%d.so"(fileName, seed++));
-        return compileDLL(fileName, dllName); 
+    void finalize() {
+        import std.file : remove, rename, exists;
+        foreach (file, seed; seedList) {
+            foreach (i; 0..seed) {
+                if (getFileName(file,i).exists) remove(getFileName(file, i));
+            }
+            if (getFileName(file, seed).exists) rename(getFileName(file, seed), getFileName(file, 0));
+        }
     }
 
-    private auto compileDLL(string inputFileName, string outputFileName) {
-        import std.concurrency : spawn, send, receiveTimeout, receiveOnly, Tid, thisTid, ownerTid;
-        import std.conv : to;
-        import std.datetime : seconds, msecs;
-        import std.file : timeLastModified;
+    private string getFileName(string base, int seed) {
+        import std.format : format;
+        import sbylib.editor.util : sbyDir;
+        return format!"%s/%s%d.so"(sbyDir, base, seed);
+    }
+
+    auto compile(string inputFileName) {
+        import std : spawn, send, receiveTimeout, receiveOnly, Tid, thisTid, ownerTid,
+               to, seconds, msecs, timeLastModified, filter, array, asAbsolutePath, asNormalizedPath;
         import std.functional : memoize;
+        import core.thread : Thread;
+        import core.atomic : atomicOp;
         import sbylib.graphics : VoidEvent, when, Frame, finish, then;
         import sbylib.editor.project : MetaInfo;
         import sbylib.editor.tools : Dub, DScanner;
         import sbylib.editor.util : importPath, dependentLibraries;
 
         auto dependencies = memoize!dependentLibraries();
-        const config = CompileConfig(
+        auto config = immutable CompileConfig(
                 inputFileName,
-                DScanner.importList(inputFileName),
-                outputFileName,
-                memoize!importPath,
-                dependencies.libraryPathList,
-                dependencies.librarySearchPathList);
-
-        const command = config.createCommand();
+                DScanner.importListRecursive!((string f) => isProjectFile(f))(inputFileName)
+                    .filter!((string f) =>
+                        f.asAbsolutePath.asNormalizedPath.array != inputFileName.asAbsolutePath.asNormalizedPath.array)
+                    .array.idup,
+                memoize!importPath.idup,
+                dependencies.libraryPathList.idup,
+                dependencies.librarySearchPathList.idup);
 
         struct Result {
             string output;
+            string outputFileName;
             Tid tid;
         }
 
-        auto tid = spawn((immutable(string[]) command, string outputFileName, immutable SysTime lastModified) {
-            auto output = build(command, outputFileName, lastModified);
+        auto tid = spawn((immutable CompileConfig config, shared int[] compilingCount) {
+            while (compilingCount[0] > 3) {
+                Thread.sleep(1.seconds);
+            }
+            compilingCount[0].atomicOp!"+="(1);
+            auto r = build(config);
+            compilingCount[0].atomicOp!"-="(1);
             while (true) {
-                send(ownerTid, Result(output, thisTid));
+                send(ownerTid, Result(r.output, r.outputFileName, thisTid));
                 auto success = receiveOnly!bool;
                 if (success) break;
             }
-        }, command.idup, outputFileName, config.lastModified.to!(immutable SysTime));
+        }, config, compilingCount);
 
         auto result = new Event!DLL;
         VoidEvent e;
@@ -66,7 +80,7 @@ static:
                 send(tid, true);
                 e.kill();
                 if (r.output == "") {
-                    result.fire(new DLL(outputFileName));
+                    result.fire(new DLL(r.outputFileName));
                 } else {
                     result.throwError(new Exception(r.output));
                 }
@@ -75,42 +89,75 @@ static:
         return result;
     }
 
-    private static string build(immutable(string[]) command, string outputFileName,
-            immutable SysTime lastModified) {
+    private static auto build(immutable CompileConfig config) {
 
         import std.concurrency : send, ownerTid;
         import std.format : format;
-        import std.file : exists, timeLastModified;
+        import std.file : exists, timeLastModified, remove;
         import std.process : execute;
         import std.stdio : writefln;
+        import std.path : baseName, extension;
+        import sbylib.editor.util : sbyDir;
 
-        if (outputFileName.exists
-                && outputFileName.timeLastModified > lastModified) {
+        struct Result { string output, outputFileName; }
+
+        const base = config.mainFile.baseName(config.mainFile.extension);
+        auto seed = base in seedList ? seedList[base] : (seedList[base] = 0);
+        auto outputFileName = getFileName(base, seed);
+
+        if (outputFileName.exists) {
             writefln("Cache found: %s", outputFileName);
-            return "";
+
+            bool useCache = true;
+            foreach (dep; config.dependencies) {
+                if (dep.timeLastModified > outputFileName.timeLastModified) {
+                    writefln("%s has been modified", dep);
+                    useCache = false;
+                }
+            }
+            if (useCache) {
+                return Result("", outputFileName);
+            }
+            seed = ++seedList[base];
+            outputFileName = getFileName(base, seed);
         }
 
         writefln("Compiling %s", outputFileName);
 
+        const command = config.createCommand(outputFileName);
         auto dmd = execute(command);
 
         if (dmd.status != 0) {
-            return format!"Compilation failed\n%s"(dmd.output);
+            return Result(format!"Compilation failed\n%s"(dmd.output), outputFileName);
         }
+        remove(format!"%s/%s%d.o"(sbyDir, base, seed));
         writefln("Compile finished %s\n%s", outputFileName, dmd.output);
-        return "";
+        return Result("", outputFileName);
+    }
+
+    private static bool isProjectFile(string f) {
+        import sbylib.editor.project : MetaInfo;
+        import std : absolutePath, dirName, asNormalizedPath, array;
+
+        const projectRoot = MetaInfo().projectName.absolutePath;
+        f = f.absolutePath.asNormalizedPath.array;
+
+        while (f != f.dirName) {
+            if (f == projectRoot) return true;
+            f = f.dirName;
+        }
+        return false;
     }
 }
 
 private struct CompileConfig {
     string   mainFile;
     string[] inputFiles;
-    string   outputFile;
     string[] importPath;
     string[] libraryPath;
     string[] librarySearchPath;
 
-    string[] createCommand() const {
+    string[] createCommand(string outputFileName) const {
         import std.algorithm : map;
         import std.array : array;
 
@@ -118,7 +165,7 @@ private struct CompileConfig {
             ~ "-L=-fuse-ld=gold"
             ~ mainFile
             ~ inputFiles
-            ~ ("-of="~ outputFile)
+            ~ ("-of="~ outputFileName)
             ~ "-shared"
             ~ importPath.map!(p => "-I" ~ p).array
             ~ librarySearchPath.map!(f => "-L-L" ~ f).array
@@ -130,12 +177,21 @@ private struct CompileConfig {
         import std.array : array;
         import std.file : timeLastModified;
 
+        return dependencies
+            .map!(p => p.timeLastModified)
+            .reduce!max;
+    }
+
+    auto dependencies() const {
+        import std.algorithm : map, filter;
+        import std.array : array;
+        import std.file : isFile;
         return ([mainFile]
              ~ inputFiles
              ~ importPath
              ~ libraryPath.map!(p => search(p)).array)
-            .map!(p => p.timeLastModified)
-            .reduce!max;
+            .filter!(p => p.isFile)
+            .array;
     }
 
     private auto search(string p) const {

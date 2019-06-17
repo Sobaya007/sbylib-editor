@@ -79,15 +79,15 @@ class Project {
         import std.file : dirEntries, SpanMode;
         import sbylib.editor.project.metainfo : MetaInfo;
 
-        foreach (file; this.projectFiles) {
+        foreach (file; moduleList.keys) {
             this.reload(file);
         }
     }
 
-	void reload(string file) 
+	auto reload(string file) 
         in (file in moduleList)
     {
-        load(file);
+        return load(file);
 	}
 
     auto get(T)(string name) {
@@ -101,11 +101,13 @@ class Project {
         import std.file : dirEntries, SpanMode, isFile;
         import std.path : baseName, buildPath;
         import sbylib.editor.project.metainfo : MetaInfo;
+        import sbylib.editor.project.moduleunit : isModule;
 
         return MetaInfo().projectName.dirEntries(SpanMode.breadth)
             .filter!(entry => entry.isFile)
             .filter!(entry => entry.baseName != "package.d")
             .filter!(entry => entry != MetaInfo().projectName.buildPath(MetaInfo().rootFile))
+            .filter!(entry => entry.isModule)
             .map!(entry => cast(string)entry)
             .array;
     }

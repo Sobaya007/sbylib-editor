@@ -1,7 +1,19 @@
 module sbylib.editor.project.moduleunit;
 
-import std.format : format;
-import std.traits : moduleName;
+import std : format, moduleName, exists;
+
+// TODO: implement seriously
+bool isModule(string file) 
+    in (file.exists)
+{
+    import std : readText, split, map, chomp, filter, startsWith, canFind, empty;
+    return readText(file).split("\n")
+        .map!(chomp)
+        .filter!(line => line.startsWith("//") is false)
+        .filter!(line => line.canFind("mixin"))
+        .filter!(line => line.canFind("Register"))
+        .empty is false;
+}
 
 class Module(RetType) {
 
@@ -91,16 +103,17 @@ class Module(RetType) {
     }
 }
 
+
 enum Register(alias f, string n = __FILE__) = format!q{
     extern(C) string %s() { return "%s"; }
     extern(C) string %s() { return "%s"; }
 }(getFunctionNameName(n), f.mangleof, getModuleNameName(n), moduleName!f);
 
-private string getFunctionNameName(string n) {
+string getFunctionNameName(string n) {
     return format!"_functionName%s"(convFileName(n));
 }
 
-private string getModuleNameName(string n) {
+string getModuleNameName(string n) {
     import std.string : replace;
     return format!"_moduleName%s"(convFileName(n));
 }
