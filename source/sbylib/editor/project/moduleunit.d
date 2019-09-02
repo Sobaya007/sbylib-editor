@@ -23,6 +23,8 @@ class Module(RetType) {
     import sbylib.editor.project.project : Project;
     import std.datetime : SysTime;
 
+    private enum State { NotYet, Compling, Success, Fail }
+
     private alias FuncType = RetType function(Project, EventContext);
 
     private EventContext context;
@@ -94,32 +96,17 @@ class Module(RetType) {
     private void initFromDLL(DLL dll) {
         this.dll = dll;
 
-        auto getFunctionName = dll.loadFunction!(string function())(getFunctionNameName(file));
+        auto getFunctionName = dll.loadFunction!(string function())("getFunctionName");
         auto functionName = getFunctionName();
         this.func = dll.loadFunction!(FuncType)(functionName);
 
-        auto getModuleName = dll.loadFunction!(string function())(getModuleNameName(file));
+        auto getModuleName = dll.loadFunction!(string function())("getModuleName");
         this.name = getModuleName();
     }
 }
 
 
-enum Register(alias f, string n = __FILE__) = format!q{
-    extern(C) string %s() { return "%s"; }
-    extern(C) string %s() { return "%s"; }
-}(getFunctionNameName(n), f.mangleof, getModuleNameName(n), moduleName!f);
-
-string getFunctionNameName(string n) {
-    return format!"_functionName%s"(convFileName(n));
-}
-
-string getModuleNameName(string n) {
-    import std.string : replace;
-    return format!"_moduleName%s"(convFileName(n));
-}
-
-private string convFileName(string n) {
-    import std.string : replace;
-
-    return n.replace("/", "_").replace(".", "_").replace("-", "_");
-}
+enum Register(alias f) = format!q{
+    extern(C) string getFunctionName() { return "%s"; }
+    extern(C) string getModuleName() { return "%s"; }
+}(f.mangleof, moduleName!f);

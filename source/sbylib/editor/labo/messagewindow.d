@@ -3,19 +3,27 @@ module sbylib.editor.labo.messagewindow;
 import sbylib.graphics;
 import sbylib.editor.project.project : Project;
 import sbylib.editor.labo.interpretor : Interpretor;
-import sbylib.wrapper.glfw : Window, WindowBuilder;
+import sbylib.wrapper.glfw : Window, WindowBuilder, Screen;
 import std.typecons : Nullable;
+
+private enum Margin = 50.pixel;
 
 class MessageWindow {
 
-    static opCall(string _title, string msg) {
+    Window window;
+    alias window this;
+
+    private Canvas canvas;
+    private Message message;
+
+    this(string _title, string msg) {
         auto c = Window.getCurrentWindow();
         assert(c);
         scope(exit) c.makeCurrent();
 
         with (WindowBuilder()) {
-            width = 400.pixel;
-            height = 300.pixel;
+            width = 800.pixel;
+            height = 600.pixel;
             title = _title;
 
             defaultHints();
@@ -33,28 +41,33 @@ class MessageWindow {
             contextRevision = c.contextRevision;
             profile = c.profile;
 
-            auto window = buildWindow(c);
+            this.window = buildWindow(c);
             window.makeCurrent();
+            window.pos = [0,0];
 
-            auto canvas = CanvasBuilder().build(window);
-            auto message = new Message(msg);
-
-            when(Frame).then({
-                auto current = Window.getCurrentWindow();
-                scope(exit) current.makeCurrent();
-
-                window.makeCurrent();
-                with (canvas.getContext()) {
-                    clear(ClearMode.Color, ClearMode.Depth);
-                    message.render();
-                    window.swapBuffers();
-                }
-            });
+            this.canvas = CanvasBuilder().build(window);
+            this.message = new Message(msg);
 
             when(mouse.scrolled).then((vec2 scroll) {
-                message.pos.y += scroll.y * 0.02;
+                message.pos.y -= scroll.y * 0.06;
+                if (message.pos.y < 0) message.pos.y = 0;
             });
         }
+    }
+
+    void render() {
+        auto current = Window.getCurrentWindow();
+        scope(exit) current.makeCurrent();
+
+        window.makeCurrent();
+        with (canvas.getContext()) {
+            clear(ClearMode.Color, ClearMode.Depth);
+            message.render();
+        }
+    }
+
+    void text(string msg) {
+        this.message.update(msg);
     }
 }
 
@@ -66,30 +79,28 @@ class Message : Entity {
     mixin ImplUniform;
 
     private Pixel lineHeight;
-    private string[] lines;
     private GlyphGeometry geom;
 
     this(string lines) {
-        import std : split;
         import sbylib.editor.util : fontPath;
 
-        this.lines = lines.split("\n");
         this.geometry = geom = new GlyphGeometry(fontPath("consola.ttf"));
         this.depthTest = false;
         this.depthWrite = false;
         this.lineHeight = 18.pixel;
         this.tex = geom.glyphStore.texture;
 
-        this.update();
+        this.update(lines);
     }
 
-    private void update() {
-        import std.algorithm : filter;
-        import std.range : walkLength;
+    void update(string text) {
+        import std : split, filter, walkLength;
 
-        const maxWidth = Window.getCurrentWindow().width;
+        auto lines = text.split("\n");
 
-        auto glyphLines = geom.glyphStore.toGlyph(this.lines, maxWidth, lineHeight);
+        const Pixel maxWidth = Window.getCurrentWindow().width - Margin * 2;
+
+        auto glyphLines = geom.glyphStore.toGlyph(lines, maxWidth, lineHeight);
 
         renderGlyph(glyphLines);
 
@@ -105,7 +116,8 @@ class Message : Entity {
         foreach (gm; glyphs) {
             if (gm.isBreak) {
                 y -= h;
-                x = h = 0;
+                x = 0.pixel;
+                h = 0.pixel;
             } else {
                 auto g = gm.toGlyph;
                 renderGlyph(g, x, y);
@@ -116,8 +128,13 @@ class Message : Entity {
     }
 
     private void renderGlyph(Glyph g, Pixel x, Pixel y) {
-        auto s = 2.0 / Window.getCurrentWindow().height * this.lineHeight / g.maxHeight;
-        geom.addCharacter(g.character, vec2(x,y) * s+vec2(-1,+1), vec2(g.advance, g.maxHeight) * s);
+        auto window = Window.getCurrentWindow();
+        Pixel h = lineHeight;
+        Pixel w = pixel(g.advance * lineHeight / g.maxHeight);
+        auto s = 2 / vec2(window.width, window.height);
+        geom.addCharacter(g.character,
+                (vec2(x+Margin,y-Margin) * lineHeight / g.maxHeight) * s + vec2(-1,+1),
+                vec2(w,h) * s);
     }
 }
 
@@ -147,13 +164,13 @@ class MessageMaterial : Material {
     });
 }
 
-private auto toGlyph(GlyphStore store, string[] lines, int maxWidth, int lineHeight) {
+private auto toGlyph(GlyphStore store, string[] lines, Pixel maxWidth, Pixel lineHeight) {
     G[] result;
     foreach (line; lines) {
-        long x;
+        Pixel x = 0.pixel;
         foreach (c; line) {
             auto g = store.toGlyph(c);
-            const w = 2 * lineHeight * g.advance / g.maxHeight;
+            const Pixel w = g.advance * lineHeight / g.maxHeight;
             if (x + w < maxWidth) {
                 result ~= g;
                 x += w;

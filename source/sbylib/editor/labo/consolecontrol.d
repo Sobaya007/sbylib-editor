@@ -12,11 +12,6 @@ class ConsoleControl {
         this.context = new EventContext;
 
         with (context()) {
-            when(Frame).then({
-                with (canvas.getContext()) {
-                    console.render();
-                }
-            });
             when(Char.typed).then((uint codepoint) {
                 import std.conv : to;
 

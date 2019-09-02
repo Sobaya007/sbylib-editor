@@ -161,15 +161,30 @@ private struct CompileConfig {
         import std.algorithm : map;
         import std.array : array;
 
-        return ["dmd"]
-            ~ "-L=-fuse-ld=gold"
-            ~ mainFile
-            ~ inputFiles
-            ~ ("-of="~ outputFileName)
-            ~ "-shared"
-            ~ importPath.map!(p => "-I" ~ p).array
-            ~ librarySearchPath.map!(f => "-L-L" ~ f).array
-            ~ libraryPath.map!(f => "-L-l" ~ f[3..$-2]).array;
+        version (DigitalMars) {
+            return ["dmd"]
+                ~ "-L=-fuse-ld=gold"
+                ~ "-g"
+                ~ mainFile
+                ~ inputFiles
+                ~ ("-of="~ outputFileName)
+                ~ "-shared"
+                ~ importPath.map!(p => "-I" ~ p).array
+                ~ librarySearchPath.map!(f => "-L-L" ~ f).array
+                ~ libraryPath.map!(f => "-L-l" ~ f[3..$-2]).array;
+        } else version (LDC) {
+            return ["dmd"]
+                ~ "-g"
+                ~ mainFile
+                ~ inputFiles
+                ~ ("-of="~ outputFileName)
+                ~ "-shared"
+                ~ importPath.map!(p => "-I" ~ p).array
+                ~ librarySearchPath.map!(f => "-L-L" ~ f).array
+                ~ libraryPath.map!(f => "-L-l" ~ f[3..$-2]).array;
+        } else {
+            static assert("This compiler is not supported");
+        }
     }
 
     auto lastModified() const {

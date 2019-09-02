@@ -33,7 +33,13 @@ class CameraControl {
                 }
             });
 
-            alias accel = (vec3 v) { this.arrivalPos += v * speed; };
+            alias accel = (vec3 v) { 
+                if (KeyButton.LeftShift.isPressed) {
+                    this.arrivalPos += v * speed * 2;  
+                } else {
+                    this.arrivalPos += v * speed; 
+                }
+            };
             when(KeyButton.KeyA.pressing).then({ accel(-camera.rot.column[0]); });
             when(KeyButton.KeyD.pressing).then({ accel(+camera.rot.column[0]); });
             when(KeyButton.KeyQ.pressing).then({ accel(-camera.rot.column[1]); });

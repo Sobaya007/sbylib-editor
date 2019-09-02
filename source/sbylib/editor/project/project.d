@@ -21,7 +21,6 @@ class Project {
         import sbylib.editor.project.metainfo : MetaInfo;
 
         auto proj = new Project;
-        proj.loadErrorHandler = &proj.defaultErrorHandler;
         auto po = MetaInfo().projectName.buildPath(MetaInfo().rootFile);
         proj.load(po);
     }
@@ -55,10 +54,21 @@ class Project {
         return when(eventList.allFinish);
 	}
 
+    void load(string[] fileList) {
+        import sbylib.graphics : then;
+
+        if (fileList.length == 0) return;
+        this.load(fileList[0])
+            .then(() => this.load(fileList[1..$]));
+    }
+
 	auto load(string file) 
         in (file.exists, file)
     {
         import sbylib.graphics : error;
+        import std : absolutePath, buildNormalizedPath;
+
+        file = buildNormalizedPath(file.absolutePath);
 
         if (file in moduleList)
             moduleList[file].destroy();
@@ -89,6 +99,10 @@ class Project {
     {
         return load(file);
 	}
+
+    auto reloadThisModule(string file = __FILE_FULL_PATH__) {
+        return this.reload(file);
+    }
 
     auto get(T)(string name) {
         if (name !in this) return null;
@@ -153,14 +167,5 @@ class Project {
 
             fileName.write(content);
         }
-    }
-
-    private void defaultErrorHandler(Exception e) {
-        import std.stdio : writeln;
-        import std.string : replace;
-
-        auto msg = e.msg;
-        msg = msg.replace("Error", "\x1b[31mError\x1b[39m");
-        writeln(msg);
     }
 }

@@ -101,14 +101,8 @@ string sbyDir() {
 }
 
 private string findPhobosPath() {
-    import std.algorithm : map, filter;
-    import std.array : front;
-    import std.conv : to;
-    import std.exception : ifThrown;
-    import std.file : exists, write;
-    import std.path : buildPath;
-    import std.process : execute;
-    import std.string : chomp, split;
+    import std : map, filter, front, to, ifThrown, exists, buildPath, execute, chomp, split, format;
+    import std.file : write;
     import sbylib.editor.project : MetaInfo;
 
     if (MetaInfo().phobosPath.exists)
@@ -132,8 +126,20 @@ void main()
     .map!(line => line.to!(string[]).ifThrown([""])[0])
     .filter!(line => line.length > 0)
     .front;
+    assert(result.exists, format!"'%s' does not exist."(result));
     MetaInfo().phobosPath = result;
     MetaInfo().saveConfig();
 
     return result;
+}
+
+void showEventList() {
+    import sbylib.editor.labo.messagewindow : MessageWindow;
+    import sbylib.graphics : when, Frame, then, until;
+
+    auto window = new MessageWindow("EventList", "");
+
+    when(Frame).then({
+        window.render();
+    }).until(() => window.shouldClose);
 }

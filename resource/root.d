@@ -41,10 +41,7 @@ void root(Project proj, EventContext context) {
     }
 
     proj.loadErrorHandler = (Exception e) {
-        with (Log()) {
-            writeln(e.msg);
-        }
-
+        MessageWindow("Error", e.msg);
         import std.stdio : writeln;
         writeln(e.msg);
     };

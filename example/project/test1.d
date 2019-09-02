@@ -3,6 +3,7 @@ import sbylib.graphics;
 import root;
 
 void func(Project project, EventContext context) {
+    /*
     auto console = project.get!Console("console");
     auto camera = project.get!Camera("camera");
     auto canvas = project.get!Canvas("canvas");
@@ -34,9 +35,8 @@ void func(Project project, EventContext context) {
                 writeln("message", cnt++);
             }
         });
-
-        MessageWindow("po", "pressed!");
     }
+    */
 }
 
 class TestMaterial : Material {

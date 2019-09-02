@@ -94,6 +94,7 @@ class Interpretor {
         import std.algorithm : map, filter;
         import std.array : join;
         import std.string : replace;
+        import std.format : format;
 
         return q{
             import sbylib.editor;

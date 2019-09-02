@@ -1,11 +1,13 @@
 module sbylib.editor.entry;
 
+import core.exception : AssertError;
 import sbylib.graphics;
 import sbylib.wrapper.gl;
 import sbylib.wrapper.glfw;
 import sbylib.editor.project.metainfo : MetaInfo;
 import sbylib.editor.project.project : Project;
 import sbylib.editor.compiler.compiler : Compiler;
+import sbylib.editor.labo.messagewindow : MessageWindow;
 
 void startEditor() {
 
@@ -30,7 +32,20 @@ void startEditor() {
     scope (exit) Compiler.finalize();
 
     while (window.shouldClose == false) {
-        FrameEventWatcher.update();
+        try {
+            FrameEventWatcher.update();
+        } catch (AssertError e) {
+            import std : writeln;
+            writeln(e.toString());
+            auto mWindow = new MessageWindow("Error", e.toString());
+            scope (exit) mWindow.destroy();
+
+            while (mWindow.shouldClose == false) {
+                mWindow.render();
+                GLFW.pollEvents();
+                mWindow.swapBuffers();
+            }
+        }
         GLFW.pollEvents();
         window.swapBuffers();
     }
